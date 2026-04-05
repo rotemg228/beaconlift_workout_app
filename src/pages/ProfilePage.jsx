@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Plus, Weight, Ruler, Trash2, ChevronDown, ChevronUp, Check } from 'lucide-react';
+import { Plus, Weight, Ruler, Trash2, ChevronDown, ChevronUp, Check, Bug, MessageCircle } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useMeasurementStore, useSettingsStore } from '../store';
 import { format, parseISO } from 'date-fns';
@@ -238,6 +238,35 @@ export default function ProfilePage() {
               </button>
             ))}
           </div>
+        </div>
+      </motion.div>
+
+      {/* ── Support & Feedback ── */}
+      <motion.div className="card mb-12" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.14 }}>
+        <div className="section-title mb-12">Support & Feedback</div>
+        <div className="flex-col gap-8">
+          <a
+            href="mailto:forgeesupport@proton.me?subject=FORGE Bug Report&body=Please describe the bug and steps to reproduce:"
+            className="btn btn-ghost btn-sm btn-full items-center gap-8 justify-start"
+            style={{ textAlign: 'left', padding: '12px' }}
+          >
+            <Bug size={16} color="var(--color-danger)" />
+            <div>
+              <div className="text-sm font-semibold">Report a Bug</div>
+              <div className="text-xs text-muted">Help us improve the experience</div>
+            </div>
+          </a>
+          <a
+            href="mailto:forgeesupport@proton.me?subject=FORGE Feature Request&body=What feature would you like to see?"
+            className="btn btn-ghost btn-sm btn-full items-center gap-8 justify-start"
+            style={{ textAlign: 'left', padding: '12px' }}
+          >
+            <MessageCircle size={16} color="var(--color-accent)" />
+            <div>
+              <div className="text-sm font-semibold">Request a Feature</div>
+              <div className="text-xs text-muted">Tell us what's missing</div>
+            </div>
+          </a>
         </div>
       </motion.div>
 
