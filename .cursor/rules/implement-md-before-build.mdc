@@ -1,0 +1,50 @@
+---
+description: Before greenfield or major builds, author IMPLEMENT.md with full plan and features; implement only after the spec exists unless user waives.
+alwaysApply: true
+---
+
+# Spec-first — IMPLEMENT.md (Antigravity-style)
+
+## When this applies
+
+Do this **before** writing substantial code when the user is:
+
+- Starting a **new project** or repo
+- Adding a **major feature** (multiple screens, APIs, or data model changes)
+- Doing a **large refactor** that reshapes architecture
+
+**Skip** for: tiny fixes, one-file bugs, config tweaks, or when the user explicitly says **skip spec**, **quick patch only**, or **just implement**.
+
+If unsure, ask once: *“Should I draft IMPLEMENT.md first, or implement directly?”*
+
+## Required artifact
+
+Create or update **`IMPLEMENT.md`** at the repo root, or **`docs/IMPLEMENT.md`** if the repo already uses `docs/` for plans. Use the **exact section order** below so it stays scannable and “implement-from-md” friendly.
+
+## IMPLEMENT.md — required sections
+
+Use `##` headings and `- [ ]` checklists where it helps execution.
+
+1. **Intent** — What we’re building, in one short paragraph; success in one sentence.
+2. **Users & stories** — Who uses it; 3–8 user stories or jobs-to-be-done.
+3. **Scope** — **In scope** / **Out of scope** / **Later** (explicit deferrals).
+4. **Stack & constraints** — Languages, frameworks, hosting, budget, browsers, mobile, offline, a11y level, performance targets.
+5. **Architecture** — High-level diagram (mermaid OK), main modules, boundaries (client vs server vs DB).
+6. **Data model** — Entities, relationships, migrations, RLS/security rules if applicable.
+7. **APIs & integrations** — REST/GraphQL routes, webhooks, third-party APIs, env vars (name + purpose, not secret values).
+8. **Auth & permissions** — How login works; roles; what each role can do.
+9. **Features** — Numbered list; each feature: behavior, edge cases, empty states, errors.
+10. **UI map** — Screens/routes; key components; design tokens or reference to existing styles.
+11. **Observability & ops** — Logging, metrics, alerts, backups, rate limits.
+12. **Testing & verification** — What to run (`npm test`, `lint`, `build`); manual smoke checklist.
+13. **Rollout** — Feature flags, migrations order, rollback plan.
+14. **Open questions** — Blocking items with recommended default or *needs user decision*.
+
+## After the doc
+
+- **Default:** Pause for user review of IMPLEMENT.md before large implementation unless they say **go ahead** or **implement the doc now**.
+- **Implementation:** When implementing, treat IMPLEMENT.md as source of truth; work top to bottom or by explicit section requests.
+
+## Portability
+
+For new repos, copy this file to **`.cursor/rules/implement-md-before-build.mdc`** (or merge into User Rules) so the same workflow applies everywhere.
