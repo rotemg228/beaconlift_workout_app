@@ -6,13 +6,31 @@
     <meta name="theme-color" content="#141414" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="apple-mobile-web-app-title" content="FORGE" />
+    <meta name="apple-mobile-web-app-title" content="BeaconLift" />
     <link rel="apple-touch-icon" href="/pwa-512.png" />
     <meta name="theme-color" content="#0A0A0A" />
-    <meta name="description" content="FORGE — Premium workout tracker. Train harder. Track smarter." />
+    <meta name="description" content="BeaconLift — Premium workout tracker. Train harder. Track smarter." />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <title>FORGE — Workout Tracker</title>
+    <title>BeaconLift — Workout Tracker</title>
+    <script>
+      window.onerror = function(msg, url, lineNo, columnNo, error) {
+        var div = document.createElement('div');
+        div.style.position = 'fixed';
+        div.style.top = '0';
+        div.style.left = '0';
+        div.style.width = '100%';
+        div.style.backgroundColor = 'red';
+        div.style.color = 'white';
+        div.style.padding = '20px';
+        div.style.zIndex = '99999';
+        div.style.fontFamily = 'monospace';
+        div.style.whiteSpace = 'pre-wrap';
+        div.innerText = 'CRASH DETECTED:\n' + msg + '\nAt: ' + url + ':' + lineNo + ':' + columnNo + '\n\n' + (error ? error.stack : 'No stack trace');
+        document.body.prepend(div);
+        return false;
+      };
+    </script>
   </head>
   <body>
     <div id="root"></div>

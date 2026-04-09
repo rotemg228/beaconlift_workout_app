@@ -1,4 +1,4 @@
-# 🚀 How to Publish FORGE (Phase 1: Web Beta)
+# 🚀 How to Publish BeaconLift (Phase 1: Web Beta)
 
 Your app is now a **Progressive Web App (PWA)**! This means users can "Install" it on their phones via Safari or Chrome.
 

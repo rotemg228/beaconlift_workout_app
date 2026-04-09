@@ -1,7 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Flame, Dumbbell, Clock, TrendingUp, ChevronRight, Plus, Zap, Trophy, Wrench } from 'lucide-react';
-import { useWorkoutStore, useTemplateStore, useExerciseStore, useSettingsStore } from '../store';
+import { useWorkoutStore, useTemplateStore, useExerciseStore, useSettingsStore, useUserStore } from '../store';
 import { format, parseISO, isToday, isYesterday, differenceInDays } from 'date-fns';
 
 function StreakCount(sessions) {
@@ -62,7 +62,7 @@ export default function Dashboard() {
       {/* ── Header ── */}
       <div className="flex items-center justify-between mb-16" style={{ marginTop: 8 }}>
         <div>
-          <div className="topbar-logo" style={{ fontSize: '2rem', lineHeight: 1 }}>FORGE</div>
+          <div className="topbar-logo" style={{ fontSize: '2rem', lineHeight: 1 }}>BeaconLift</div>
           <p className="text-xs text-muted" style={{ marginTop: 2 }}>
             {name ? `Welcome back, ${name}` : 'Train harder. Track smarter.'}
           </p>
@@ -142,7 +142,14 @@ export default function Dashboard() {
       {/* ── Templates ── */}
       <div className="section-header mb-8">
         <span className="section-title">Templates</span>
-        <Link to="/workout" className="text-xs text-accent font-semibold" style={{ textDecoration: 'none' }}>See all</Link>
+        <div className="flex gap-12 items-center">
+          {!useUserStore.getState().profile.isPro && (
+            <span className="text-xs text-muted">
+              {templates.filter(t => t.isCustom).length}/3
+            </span>
+          )}
+          <Link to="/workout" className="text-xs text-accent font-semibold" style={{ textDecoration: 'none' }}>See all</Link>
+        </div>
       </div>
 
       <div className="flex-col gap-8 mb-16">

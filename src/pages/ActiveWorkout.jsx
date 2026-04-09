@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Plus, CheckCircle2, Circle, ChevronDown, ChevronUp, Trash2, Timer, Trophy, Search, Dumbbell } from 'lucide-react';
-import { useWorkoutStore, useExerciseStore, useTemplateStore, useSettingsStore } from '../store';
+import { useWorkoutStore, useExerciseStore, useTemplateStore, useSettingsStore, useUserStore } from '../store';
 import { useRestTimer, useWorkoutTimer } from '../hooks';
 import { CATEGORIES } from '../data/exercises';
 import CustomSelect from '../components/CustomSelect';
@@ -312,10 +312,15 @@ function ExerciseCard({ sessionEx, onAddSet, onRemoveSet, onUpdateSet, onComplet
 
 // ─── FINISH MODAL ────────────────────────────────────────
 function FinishModal({ session, onConfirm, onCancel }) {
+  const [saveAsTemplate, setSaveAsTemplate] = useState(false);
   const completedSets = session.exercises.reduce((t, e) => t + e.sets.filter(s => s.completed && !s.isWarmup).length, 0);
   const totalSets = session.exercises.reduce((t, e) => t + e.sets.filter(s => !s.isWarmup).length, 0);
   const prs = session.exercises.reduce((t, e) => t + e.sets.filter(s => s.isPR).length, 0);
   const { unit } = useSettingsStore.getState();
+
+  const handleFinish = () => {
+    onConfirm(saveAsTemplate);
+  };
 
   return (
     <div className="modal-overlay animate-fadeIn modal-center">
@@ -323,10 +328,10 @@ function FinishModal({ session, onConfirm, onCancel }) {
         <div className="text-center mb-16">
           <div style={{ fontSize: '3rem', marginBottom: 8 }}>💪</div>
           <h2>Workout Complete!</h2>
-          <p className="text-sm">Great work — here's your summary</p>
+          <p className="text-sm text-muted">Great work — here's your summary</p>
         </div>
 
-        <div className="stat-grid mb-16">
+        <div className="stat-grid mb-24">
           <div className="stat-box">
             <div className="stat-value">{completedSets}/{totalSets}</div>
             <div className="stat-label">Sets Done</div>
@@ -336,14 +341,26 @@ function FinishModal({ session, onConfirm, onCancel }) {
             <div className="stat-label">Exercises</div>
           </div>
           <div className="stat-box">
-            <div className="stat-value text-pr">{prs}</div>
+            <div className="stat-value text-accent">{prs}</div>
             <div className="stat-label">PRs 🏆</div>
           </div>
         </div>
 
+        <div className="card mb-24" style={{ cursor: 'pointer', border: saveAsTemplate ? '1px solid var(--color-accent)' : '1px solid var(--color-border)' }} onClick={() => setSaveAsTemplate(!saveAsTemplate)}>
+          <div className="flex items-center gap-12">
+            <div className={`icon-circle ${saveAsTemplate ? 'bg-accent' : 'bg-surface-2'}`} style={{ width: 24, height: 24 }}>
+              {saveAsTemplate ? <CheckCircle2 size={16} color="#000" /> : <Circle size={16} />}
+            </div>
+            <div style={{ flex: 1 }}>
+              <div className="text-sm font-semibold">Save as Template</div>
+              <div className="text-xs text-muted">Add this routine to your templates</div>
+            </div>
+          </div>
+        </div>
+
         <div className="flex gap-8">
-          <button className="btn btn-ghost" style={{ flex: 1 }} onClick={onCancel}>Back</button>
-          <button className="btn btn-primary" style={{ flex: 2 }} onClick={onConfirm}>Save Workout</button>
+          <button className="btn btn-secondary" style={{ flex: 1 }} onClick={onCancel}>Back</button>
+          <button className="btn btn-primary" style={{ flex: 2 }} onClick={handleFinish}>Save Workout</button>
         </div>
       </motion.div>
     </div>
@@ -353,6 +370,9 @@ function FinishModal({ session, onConfirm, onCancel }) {
 // ─── TEMPLATE PICKER ────────────────────────────────────
 function TemplatePicker({ onSelect, onStartBlank, onClose }) {
   const { templates } = useTemplateStore();
+  const { profile } = useUserStore();
+  const customCount = templates.filter(t => t.isCustom).length;
+
   return (
     <div className="modal-overlay animate-fadeIn" onClick={onClose}>
       <motion.div className="modal-sheet" onClick={e => e.stopPropagation()}
@@ -365,7 +385,12 @@ function TemplatePicker({ onSelect, onStartBlank, onClose }) {
           <Plus size={18} /> Empty Workout
         </button>
 
-        <div className="section-title mb-12">Templates</div>
+        <div className="section-header mb-12">
+          <span className="section-title">Templates</span>
+          {!profile.isPro && (
+            <span className="text-xs text-muted">Usage: {customCount}/3</span>
+          )}
+        </div>
         <div className="flex-col gap-8" style={{ maxHeight: '60vh', overflowY: 'auto' }}>
           {templates.map(t => (
             <button key={t.id} className="card card-sm w-full" style={{ textAlign: 'left', cursor: 'pointer' }} onClick={() => onSelect(t)}>
@@ -419,8 +444,22 @@ export default function ActiveWorkout() {
     }
   };
 
-  const handleFinish = () => {
-    finishWorkout();
+  const handleFinish = async (saveAsTemplate) => {
+    const finished = await finishWorkout();
+    if (finished && saveAsTemplate) {
+      const { addTemplate } = useTemplateStore.getState();
+      await addTemplate({
+        name: finished.name,
+        category: 'Custom',
+        exercises: finished.exercises.map(e => ({
+          exerciseId: e.exerciseId,
+          defaultSets: e.sets.length,
+          defaultReps: e.sets[0]?.reps ?? 10,
+          defaultWeight: e.sets[0]?.weight ?? 0,
+          restSeconds: e.restSeconds ?? 90,
+        })),
+      });
+    }
     navigate('/history');
   };
 

@@ -24,3 +24,15 @@ dist-ssr
 *.sw?
 
 .vercel
+
+# Secrets and local env
+.env
+.env.*
+
+# Local scratch logs
+build_error.txt
+build_output.txt
+lint_errors.txt
+
+# Obsidian vault (local second brain; keep out of repo)
+WorkoutTracker/

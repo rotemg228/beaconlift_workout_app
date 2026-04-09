@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { supabase } from '../supabase';
 import { EXERCISES } from '../data/exercises';
 import { TEMPLATES } from '../data/templates';
 
@@ -33,28 +34,132 @@ export const useExerciseStore = create((set, get) => ({
   getExercise: (id) => get().exercises.find(e => e.id === id),
 }));
 
+// ─── USER STORE ──────────────────────────────────────────
+export const useUserStore = create((set, get) => ({
+  user: loadLS('forge_user', null),
+  profile: loadLS('forge_profile', { isPro: false, plan: 'free', username: '', joinedAt: new Date().toISOString() }),
+  isProModalOpen: false,
+
+  setUser: (user) => {
+    saveLS('forge_user', user);
+    set({ user });
+  },
+
+  setProModalOpen: (open) => set({ isProModalOpen: open }),
+
+  syncProfile: async (user) => {
+    if (!user) {
+      const fallback = { isPro: false, plan: 'free', username: '', joinedAt: new Date().toISOString() };
+      saveLS('forge_profile', fallback);
+      set({ profile: fallback });
+      return;
+    }
+    const { data, error } = await supabase.from('profiles').select('*').eq('id', user.id).maybeSingle();
+    const profile = !error && data
+      ? {
+          ...get().profile,
+          username: data.username || user.user_metadata?.username || '',
+          isPro: !!(data.is_pro || data.is_plus),
+          plan: data.plan || ((data.is_pro || data.is_plus) ? 'plus' : 'free'),
+        }
+      : {
+          ...get().profile,
+          username: user.user_metadata?.username || '',
+          isPro: false,
+          plan: 'free',
+        };
+    saveLS('forge_profile', profile);
+    set({ profile });
+  },
+
+  updateProfile: (changes) => {
+    const updated = { ...get().profile, ...changes };
+    saveLS('forge_profile', updated);
+    set({ profile: updated });
+  },
+
+  logout: () => {
+    localStorage.removeItem('forge_user');
+    localStorage.removeItem('forge_profile');
+    set({ user: null, profile: { isPro: false, plan: 'free', username: '', joinedAt: new Date().toISOString() } });
+  },
+}));
+
 // ─── TEMPLATE STORE ───────────────────────────────────────
 export const useTemplateStore = create((set, get) => ({
   templates: loadLS('forge_templates', TEMPLATES),
 
-  addTemplate: (t) => {
+  syncTemplates: async (user) => {
+    if (!user) return;
+    const { data, error } = await supabase.from('templates').select('*').eq('user_id', user.id);
+    if (!error && data) {
+      const formatted = data.map(t => ({
+        id: t.id,
+        name: t.name,
+        category: t.category,
+        exercises: t.exercises,
+        isCustom: true,
+      }));
+      set({ templates: [...TEMPLATES, ...formatted] });
+      saveLS('forge_templates', get().templates);
+    }
+  },
+
+  canAddTemplate: () => {
+    const { profile } = useUserStore.getState();
+    const { templates } = get();
+    if (profile.isPro) return true;
+    const customCount = templates.filter(t => t.isCustom).length;
+    return customCount < 3;
+  },
+
+  addTemplate: async (t) => {
+    if (!get().canAddTemplate()) {
+      useUserStore.getState().setProModalOpen(true);
+      return null;
+    }
+
     const newT = { ...t, id: genId(), createdAt: new Date().toISOString(), isCustom: true };
     const updated = [...get().templates, newT];
     saveLS('forge_templates', updated);
     set({ templates: updated });
+
+    const user = useUserStore.getState().user;
+    if (user) {
+      await supabase.from('templates').upsert({
+        user_id: user.id,
+        name: newT.name,
+        category: newT.category,
+        exercises: newT.exercises,
+      });
+    }
     return newT.id;
   },
 
-  updateTemplate: (id, changes) => {
+  updateTemplate: async (id, changes) => {
     const updated = get().templates.map(t => t.id === id ? { ...t, ...changes } : t);
     saveLS('forge_templates', updated);
     set({ templates: updated });
+
+    const user = useUserStore.getState().user;
+    if (user && id.length > 30) {
+      await supabase.from('templates').update({
+        name: changes.name,
+        category: changes.category,
+        exercises: changes.exercises,
+      }).eq('id', id).eq('user_id', user.id);
+    }
   },
 
-  deleteTemplate: (id) => {
+  deleteTemplate: async (id) => {
     const updated = get().templates.filter(t => t.id !== id || !t.isCustom);
     saveLS('forge_templates', updated);
     set({ templates: updated });
+
+    const user = useUserStore.getState().user;
+    if (user && id.length > 30) {
+      await supabase.from('templates').delete().eq('id', id).eq('user_id', user.id);
+    }
   },
 }));
 
@@ -63,7 +168,26 @@ export const useWorkoutStore = create((set, get) => ({
   sessions: loadLS('forge_sessions', []),
   activeSession: null,
 
-  // ── Start a workout ────────────────────────────────────
+  syncSessions: async (user) => {
+    if (!user) return;
+    const { data, error } = await supabase.from('workouts').select('*').eq('user_id', user.id).order('date', { ascending: false });
+    if (!error && data) {
+      const formatted = data.map(w => ({
+        id: w.id,
+        templateId: w.template_id,
+        name: w.name,
+        date: w.date,
+        startTime: w.start_time,
+        endTime: w.end_time,
+        exercises: w.exercises,
+        notes: w.notes,
+        totalVolume: +w.total_volume,
+      }));
+      set({ sessions: formatted });
+      saveLS('forge_sessions', formatted);
+    }
+  },
+
   startWorkout: (template = null) => {
     const session = {
       id: genId(),
@@ -94,7 +218,6 @@ export const useWorkoutStore = create((set, get) => ({
     set({ activeSession: session });
   },
 
-  // ── Add exercise to active session ─────────────────────
   addExerciseToSession: (exerciseId, restSeconds = 90) => {
     const { activeSession } = get();
     if (!activeSession) return;
@@ -108,7 +231,6 @@ export const useWorkoutStore = create((set, get) => ({
     set({ activeSession: updated });
   },
 
-  // ── Remove exercise from session ───────────────────────
   removeExerciseFromSession: (exerciseId) => {
     const { activeSession } = get();
     if (!activeSession) return;
@@ -116,7 +238,6 @@ export const useWorkoutStore = create((set, get) => ({
     set({ activeSession: updated });
   },
 
-  // ── Add set ────────────────────────────────────────────
   addSet: (exerciseId) => {
     const { activeSession } = get();
     if (!activeSession) return;
@@ -132,7 +253,6 @@ export const useWorkoutStore = create((set, get) => ({
     set({ activeSession: updated });
   },
 
-  // ── Remove set ─────────────────────────────────────────
   removeSet: (exerciseId, setId) => {
     const { activeSession } = get();
     if (!activeSession) return;
@@ -147,7 +267,6 @@ export const useWorkoutStore = create((set, get) => ({
     set({ activeSession: updated });
   },
 
-  // ── Update set field ───────────────────────────────────
   updateSet: (exerciseId, setId, field, value) => {
     const { activeSession } = get();
     if (!activeSession) return;
@@ -162,7 +281,6 @@ export const useWorkoutStore = create((set, get) => ({
     set({ activeSession: updated });
   },
 
-  // ── Toggle set complete + PR check ─────────────────────
   toggleSetComplete: (exerciseId, setId) => {
     const { activeSession, sessions } = get();
     if (!activeSession) return false;
@@ -175,7 +293,6 @@ export const useWorkoutStore = create((set, get) => ({
     let isPR = false;
 
     if (nowComplete && !theSet.isWarmup) {
-      // Check if this is a PR (best weight × reps e1RM)
       const current1RM = theSet.weight * (1 + theSet.reps / 30);
       const pastBest = sessions
         .flatMap(s => s.exercises.filter(e => e.exerciseId === exerciseId).flatMap(e => e.sets))
@@ -195,8 +312,7 @@ export const useWorkoutStore = create((set, get) => ({
     return isPR;
   },
 
-  // ── Finish workout ─────────────────────────────────────
-  finishWorkout: () => {
+  finishWorkout: async () => {
     const { activeSession, sessions } = get();
     if (!activeSession) return null;
 
@@ -208,20 +324,39 @@ export const useWorkoutStore = create((set, get) => ({
     const updated = [finished, ...sessions];
     saveLS('forge_sessions', updated);
     set({ sessions: updated, activeSession: null });
+
+    const user = useUserStore.getState().user;
+    if (user) {
+      await supabase.from('workouts').upsert({
+        user_id: user.id,
+        template_id: finished.templateId,
+        name: finished.name,
+        date: finished.date,
+        start_time: finished.startTime,
+        end_time: finished.endTime,
+        exercises: finished.exercises,
+        notes: finished.notes,
+        total_volume: finished.totalVolume,
+      });
+    }
     return finished;
   },
 
-  // ── Cancel workout ─────────────────────────────────────
-  cancelWorkout: () => set({ activeSession: null }),
+  cancelWorkout: () => {
+    set({ activeSession: null });
+  },
 
-  // ── Delete session ─────────────────────────────────────
-  deleteSession: (id) => {
+  deleteSession: async (id) => {
     const updated = get().sessions.filter(s => s.id !== id);
     saveLS('forge_sessions', updated);
     set({ sessions: updated });
+
+    const user = useUserStore.getState().user;
+    if (user && id.length > 30) {
+      await supabase.from('workouts').delete().eq('id', id).eq('user_id', user.id);
+    }
   },
 
-  // ── Get best sets per exercise (for progress) ──────────
   getBestSets: (exerciseId) => {
     return get().sessions
       .flatMap(s => ({ date: s.date, sets: s.exercises.find(e => e.exerciseId === exerciseId)?.sets ?? [] }))
@@ -235,7 +370,6 @@ export const useWorkoutStore = create((set, get) => ({
       .sort((a, b) => a.date.localeCompare(b.date));
   },
 
-  // ── Get all PRs ────────────────────────────────────────
   getAllPRs: () => {
     const { sessions } = get();
     const prMap = {};
@@ -257,30 +391,50 @@ export const useWorkoutStore = create((set, get) => ({
 // ─── MEASUREMENT STORE ────────────────────────────────────
 export const useMeasurementStore = create((set, get) => ({
   measurements: loadLS('forge_measurements', []),
-  unit: loadLS('forge_unit', 'kg'), // 'kg' | 'lbs'
 
-  setUnit: (unit) => {
-    saveLS('forge_unit', unit);
-    set({ unit });
+  syncMeasurements: async (user) => {
+    if (!user) return;
+    const { data, error } = await supabase.from('measurements').select('*').eq('user_id', user.id).order('date', { ascending: false });
+    if (!error && data) {
+      const formatted = data.map(m => ({
+        id: m.id,
+        date: m.date,
+        weight: +m.weight,
+        bodyFat: +m.body_fat,
+        measurements: m.measurements,
+      }));
+      set({ measurements: formatted });
+      saveLS('forge_measurements', formatted);
+    }
   },
 
-  addMeasurement: (m) => {
+  addMeasurement: async (m) => {
     const entry = { ...m, id: genId(), date: m.date ?? new Date().toISOString().split('T')[0] };
     const updated = [entry, ...get().measurements].sort((a, b) => b.date.localeCompare(a.date));
     saveLS('forge_measurements', updated);
     set({ measurements: updated });
+
+    const user = useUserStore.getState().user;
+    if (user) {
+      await supabase.from('measurements').upsert({
+        user_id: user.id,
+        date: entry.date,
+        weight: entry.weight,
+        body_fat: entry.bodyFat,
+        measurements: entry.measurements,
+      });
+    }
   },
 
-  updateMeasurement: (id, changes) => {
-    const updated = get().measurements.map(m => m.id === id ? { ...m, ...changes } : m);
-    saveLS('forge_measurements', updated);
-    set({ measurements: updated });
-  },
-
-  deleteMeasurement: (id) => {
+  deleteMeasurement: async (id) => {
     const updated = get().measurements.filter(m => m.id !== id);
     saveLS('forge_measurements', updated);
     set({ measurements: updated });
+
+    const user = useUserStore.getState().user;
+    if (user && id.length > 30) {
+      await supabase.from('measurements').delete().eq('id', id).eq('user_id', user.id);
+    }
   },
 
   getLatest: () => get().measurements[0] ?? null,

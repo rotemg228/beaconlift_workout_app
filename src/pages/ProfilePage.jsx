@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Plus, Weight, Ruler, Trash2, ChevronDown, ChevronUp, Check, Bug, MessageCircle } from 'lucide-react';
+import { Plus, Weight, Ruler, Trash2, ChevronDown, ChevronUp, Check, Bug, MessageCircle, LogOut, Crown, ShieldCheck } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { useMeasurementStore, useSettingsStore } from '../store';
+import { useMeasurementStore, useSettingsStore, useUserStore } from '../store';
+import { supabase } from '../supabase';
 import { format, parseISO } from 'date-fns';
 
 const MEASUREMENT_FIELDS = [
@@ -88,10 +89,16 @@ function AddMeasurementSheet({ onClose }) {
 export default function ProfilePage() {
   const { measurements, deleteMeasurement, getLatest, getWeightHistory } = useMeasurementStore();
   const { unit, setUnit, name, setName, defaultRest, setDefaultRest } = useSettingsStore();
+  const { user, profile, logout } = useUserStore();
   const [showAdd, setShowAdd] = useState(false);
   const [editName, setEditName] = useState(false);
   const [nameInput, setNameInput] = useState(name);
   const [expanded, setExpanded] = useState(false);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    logout();
+  };
 
   const latest = getLatest();
   const weightHistory = getWeightHistory().map(d => ({
@@ -99,19 +106,36 @@ export default function ProfilePage() {
     date: (() => { try { return format(parseISO(d.date), 'MMM d'); } catch { return d.date; } })(),
   }));
 
+  const displayName = user?.user_metadata?.username || profile.username || user?.user_metadata?.full_name || name || 'Athlete';
+  const avatarUrl = user?.user_metadata?.avatar_url;
+  const { setProModalOpen } = useUserStore();
+
   return (
     <div className="page-content">
       <div className="topbar">
         <span className="topbar-title">Profile</span>
-        <button className="topbar-action" onClick={() => setShowAdd(true)}><Plus size={20} /></button>
+        <div className="flex gap-12">
+          <button className="btn-icon" onClick={handleLogout} style={{ color: 'var(--color-text-muted)' }}>
+            <LogOut size={20} />
+          </button>
+          <button className="topbar-action" onClick={() => setShowAdd(true)}><Plus size={20} /></button>
+        </div>
       </div>
 
-      {/* ── Name ── */}
+      {/* ── User Card ── */}
       <motion.div className="card mb-12" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
         <div className="flex items-center justify-between">
-          <div>
-            <div className="section-title mb-4">Athlete</div>
-            {editName ? (
+          <div style={{ flex: 1 }}>
+            <div className="flex items-center gap-6 mb-4">
+              <span className="section-title" style={{ marginBottom: 0 }}>Account</span>
+              {profile.isPro && (
+                <div className="badge badge-accent flex items-center gap-4" style={{ fontSize: '0.6rem', padding: '2px 6px' }}>
+                  <Crown size={10} /> PLUS
+                </div>
+              )}
+            </div>
+            
+            {editName && !user ? (
               <div className="flex items-center gap-8">
                 <input
                   className="input"
@@ -124,21 +148,61 @@ export default function ProfilePage() {
                 <button className="btn btn-primary btn-sm" onClick={() => { setName(nameInput); setEditName(false); }}>Save</button>
               </div>
             ) : (
-              <div className="font-bold text-lg" onClick={() => setEditName(true)} style={{ cursor: 'pointer' }}>
-                {name || <span className="text-muted">Tap to add name</span>}
+              <div className="font-bold text-lg" onClick={() => !user && setEditName(true)} style={{ cursor: user ? 'default' : 'pointer' }}>
+                {displayName}
+              </div>
+            )}
+            <div className="text-xs text-muted">{user?.email || 'Logged in locally'}</div>
+          </div>
+
+          <div style={{ position: 'relative' }}>
+            {avatarUrl ? (
+              <img 
+                src={avatarUrl} 
+                alt={displayName} 
+                style={{ width: 52, height: 52, borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--color-accent)' }} 
+              />
+            ) : (
+              <div style={{
+                width: 52, height: 52, borderRadius: '50%',
+                background: 'linear-gradient(135deg, var(--color-accent), var(--color-accent-muted))',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: '1.4rem', fontFamily: 'var(--font-display)', letterSpacing: '0.05em',
+              }}>
+                {displayName ? displayName[0].toUpperCase() : '🔥'}
+              </div>
+            )}
+            {profile.isPro && (
+              <div style={{ position: 'absolute', bottom: -2, right: -2, background: 'var(--color-accent)', borderRadius: '50%', padding: 3, border: '2px solid var(--color-surface)' }}>
+                <ShieldCheck size={12} color="#000" />
               </div>
             )}
           </div>
-          <div style={{
-            width: 52, height: 52, borderRadius: '50%',
-            background: 'linear-gradient(135deg, var(--color-accent), var(--color-accent-muted))',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: '1.4rem', fontFamily: 'var(--font-display)', letterSpacing: '0.05em',
-          }}>
-            {name ? name[0].toUpperCase() : '🔥'}
-          </div>
         </div>
       </motion.div>
+
+      {/* ── BeaconLift Plus Upsell ── */}
+      {!profile.isPro && (
+        <motion.div 
+          className="card mb-12" 
+          style={{ 
+            background: 'linear-gradient(135deg, rgba(255, 122, 0, 0.15), rgba(255, 122, 0, 0.05))',
+            border: '1px solid rgba(255, 122, 0, 0.3)'
+          }}
+          initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.1 }}
+        >
+          <div className="flex items-center gap-12">
+            <div className="icon-circle" style={{ background: 'var(--color-accent)', color: '#000' }}>
+              <Crown size={20} />
+            </div>
+            <div style={{ flex: 1 }}>
+              <div className="font-bold">Upgrade to BeaconLift Plus</div>
+              <div className="text-xs text-muted">Cloud sync, unlimited templates & charts.</div>
+            </div>
+            <button className="btn btn-primary btn-sm" onClick={() => setProModalOpen(true)}>Get Plus</button>
+          </div>
+        </motion.div>
+      )}
 
       {/* ── Latest stats ── */}
       {latest && (
@@ -246,7 +310,7 @@ export default function ProfilePage() {
         <div className="section-title mb-12">Support & Feedback</div>
         <div className="flex-col gap-8">
           <a
-            href="mailto:forgeesupport@proton.me?subject=FORGE Bug Report&body=Please describe the bug and steps to reproduce:"
+            href="mailto:forgeesupport@proton.me?subject=BeaconLift Bug Report&body=Please describe the bug and steps to reproduce:"
             className="btn btn-ghost btn-sm btn-full items-center gap-8 justify-start"
             style={{ textAlign: 'left', padding: '12px' }}
           >
@@ -257,7 +321,7 @@ export default function ProfilePage() {
             </div>
           </a>
           <a
-            href="mailto:forgeesupport@proton.me?subject=FORGE Feature Request&body=What feature would you like to see?"
+            href="mailto:forgeesupport@proton.me?subject=BeaconLift Feature Request&body=What feature would you like to see?"
             className="btn btn-ghost btn-sm btn-full items-center gap-8 justify-start"
             style={{ textAlign: 'left', padding: '12px' }}
           >

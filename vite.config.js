@@ -9,8 +9,8 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'pwa-512.png'],
       manifest: {
-        name: 'FORGE Workout Tracker',
-        short_name: 'FORGE',
+        name: 'BeaconLift Workout Tracker',
+        short_name: 'BeaconLift',
         description: 'Premium Workout Tracker for Strength Athletes',
         theme_color: '#141414',
         background_color: '#141414',

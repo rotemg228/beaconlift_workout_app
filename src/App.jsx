@@ -1,7 +1,9 @@
-import { BrowserRouter, Routes, Route, useLocation, Link } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useLocation, Link, Navigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Home, Dumbbell, History, TrendingUp, User, Plus, Wrench } from 'lucide-react';
-import { useWorkoutStore } from './store';
+import { useWorkoutStore, useUserStore, useTemplateStore, useMeasurementStore } from './store';
+import { supabase } from './supabase';
 import Dashboard from './pages/Dashboard';
 import ActiveWorkout from './pages/ActiveWorkout';
 import HistoryPage from './pages/HistoryPage';
@@ -9,6 +11,8 @@ import ExerciseLibrary from './pages/ExerciseLibrary';
 import Progress from './pages/Progress';
 import ProfilePage from './pages/ProfilePage';
 import Tools from './pages/Tools';
+import Login from './pages/Login';
+import ProModal from './components/ProModal';
 import './styles/index.css';
 
 const pageVariants = {
@@ -21,6 +25,8 @@ function NavBar() {
   const location = useLocation();
   const { activeSession } = useWorkoutStore();
   const path = location.pathname;
+
+  if (path === '/login') return null;
 
   const navItems = [
     { to: '/',          icon: Home,       label: 'Home'     },
@@ -56,7 +62,58 @@ function NavBar() {
 }
 
 function AppRoutes() {
+  const { user, setUser, syncProfile } = useUserStore();
+  const { syncSessions } = useWorkoutStore();
+  const { syncTemplates } = useTemplateStore();
+  const { syncMeasurements } = useMeasurementStore();
+  const [isGuest, setIsGuest] = useState(false);
+  const [authReady, setAuthReady] = useState(false);
   const location = useLocation();
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      const u = session?.user ?? null;
+      setUser(u);
+      if (u) {
+        syncProfile(u);
+        syncSessions(u);
+        syncTemplates(u);
+        syncMeasurements(u);
+      } else {
+        syncProfile(null);
+      }
+      setAuthReady(true);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      const u = session?.user ?? null;
+      setUser(u);
+      if (u) {
+        syncProfile(u);
+        syncSessions(u);
+        syncTemplates(u);
+        syncMeasurements(u);
+      } else {
+        syncProfile(null);
+      }
+      setAuthReady(true);
+    });
+
+    return () => subscription.unsubscribe();
+  }, [setUser, syncProfile, syncSessions, syncTemplates, syncMeasurements]);
+
+  if (!authReady) {
+    return null;
+  }
+
+  if ((user || isGuest) && location.pathname === '/login') {
+    return <Navigate to="/" replace />;
+  }
+
+  if (!user && !isGuest && location.pathname !== '/login') {
+    return <Navigate to="/login" replace />;
+  }
+
   return (
     <AnimatePresence mode="wait">
       <motion.div
@@ -75,6 +132,7 @@ function AppRoutes() {
           <Route path="/progress"    element={<Progress />} />
           <Route path="/profile"     element={<ProfilePage />} />
           <Route path="/tools"       element={<Tools />} />
+          <Route path="/login"       element={<Login onFinish={() => setIsGuest(true)} />} />
         </Routes>
       </motion.div>
     </AnimatePresence>
@@ -87,6 +145,7 @@ export default function App() {
       <div className="app-shell">
         <AppRoutes />
         <NavBar />
+        <ProModal />
       </div>
     </BrowserRouter>
   );
