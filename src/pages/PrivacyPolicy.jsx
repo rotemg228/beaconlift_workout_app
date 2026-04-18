@@ -45,7 +45,7 @@ export default function PrivacyPolicy() {
         <p>
           We use trusted third-party infrastructure to run the Service, including database and authentication providers (such as
           Supabase) and hosting (such as Vercel). Payment processing for paid plans may be handled by a reseller / merchant of record
-          (such as Paddle) under their terms and privacy notice.
+          (such as Gumroad) under their terms and privacy notice.
         </p>
         <p className="mt-12">
           Data may be processed in countries where those providers operate. We rely on contractual and technical safeguards

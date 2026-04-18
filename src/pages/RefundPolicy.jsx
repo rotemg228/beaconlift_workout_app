@@ -8,7 +8,7 @@ export default function RefundPolicy() {
         <p>
           BeaconLift offers optional paid plans (for example <strong className="text-secondary">BeaconLift Plus</strong>). Paid
           subscriptions are processed by our payment partner, which may act as the <strong className="text-secondary">merchant of
-          record</strong> (for example <strong className="text-secondary">Paddle</strong>). That means Paddle (or the checkout
+          record</strong> (for example <strong className="text-secondary">Gumroad</strong>). That means Gumroad (or the checkout
           provider shown on your receipt) is typically the seller of record for tax and consumer-rights purposes.
         </p>
       </section>
@@ -35,8 +35,8 @@ export default function RefundPolicy() {
         <h2 className="text-base font-bold mb-8" style={{ color: 'var(--color-text-primary)' }}>Refunds</h2>
         <p>
           <strong className="text-secondary">Refund requests for paid subscriptions are handled by our payment provider (e.g.
-          Paddle)</strong> according to their buyer terms and applicable law. If you believe you were charged in error, contact
-          support using the link on your receipt or Paddle’s support channels. We will also try to help if you email us, but the
+          Gumroad)</strong> according to their buyer terms and applicable law. If you believe you were charged in error, contact
+          support using the link on your receipt or Gumroad’s help channels. We will also try to help if you email us, but the
           payment provider may need to process any money movement.
         </p>
         <p className="mt-12">
@@ -68,7 +68,7 @@ export default function RefundPolicy() {
           </a>
         </p>
         <p className="mt-12 text-xs text-muted">
-          This page is provided for clarity and is not legal advice. For Paddle-specific terms, refer to Paddle’s documentation and
+          This page is provided for clarity and is not legal advice. For Gumroad-specific terms, refer to Gumroad’s documentation and
           the terms presented at checkout.
         </p>
       </section>
