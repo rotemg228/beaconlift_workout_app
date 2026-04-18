@@ -267,7 +267,6 @@ const TOOLS = [
 
 export default function Tools() {
   const [active, setActive] = useState('calc1rm');
-  const current = TOOLS.find(t => t.id === active);
 
   return (
     <div className="page-content">

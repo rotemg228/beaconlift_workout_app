@@ -15,7 +15,6 @@ function SessionCard({ session, onDelete }) {
   const { getExercise } = useExerciseStore();
   const { unit } = useSettingsStore();
 
-  const completedSets = session.exercises.reduce((t, e) => t + e.sets.filter(s => s.completed && !s.isWarmup).length, 0);
   const prs = session.exercises.reduce((t, e) => t + e.sets.filter(s => s.isPR).length, 0);
   const dateStr = (() => {
     try { return format(parseISO(session.date), 'EEE, MMM d yyyy'); }
@@ -124,7 +123,7 @@ export default function HistoryPage() {
 
       {filtered.length === 0 && sessions.length > 0 && (
         <div className="empty-state">
-          <p>No workouts match "{search}"</p>
+          <p>{`No workouts match "${search}"`}</p>
         </div>
       )}
 

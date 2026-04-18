@@ -47,7 +47,6 @@ function AddExerciseSheet({ onClose }) {
   const [form, setForm] = useState({
     name: '', category: 'Push', equipment: 'Barbell', muscleGroups: [],
   });
-  const [muscleInput, setMuscleInput] = useState('');
   const [saved, setSaved] = useState(false);
 
   const toggleMuscle = (m) => {
@@ -124,7 +123,7 @@ function AddExerciseSheet({ onClose }) {
 }
 
 export default function ExerciseLibrary() {
-  const { exercises, removeCustomExercise } = useExerciseStore();
+  const { exercises } = useExerciseStore();
   const [query, setQuery] = useState('');
   const [catFilter, setCatFilter] = useState('All');
   const [equipFilter, setEquipFilter] = useState('All');

@@ -71,7 +71,7 @@ export function useLocalStorage(key, initial) {
   });
   const set = useCallback((v) => {
     setValue(v);
-    try { localStorage.setItem(key, JSON.stringify(v)); } catch {}
+    try { localStorage.setItem(key, JSON.stringify(v)); } catch { /* quota */ }
   }, [key]);
   return [value, set];
 }

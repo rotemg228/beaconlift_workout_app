@@ -328,7 +328,7 @@ export default function ProfilePage() {
             <MessageCircle size={16} color="var(--color-accent)" />
             <div>
               <div className="text-sm font-semibold">Request a Feature</div>
-              <div className="text-xs text-muted">Tell us what's missing</div>
+              <div className="text-xs text-muted">Tell us what&apos;s missing</div>
             </div>
           </a>
         </div>
@@ -339,7 +339,7 @@ export default function ProfilePage() {
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.15 }}>
           <div className="section-title mb-10">Measurement Log</div>
           <div className="flex-col gap-8">
-            {measurements.map((m, i) => (
+            {measurements.map((m) => (
               <div key={m.id} className="card card-sm flex items-center justify-between">
                 <div>
                   <div className="text-sm font-semibold">

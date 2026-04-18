@@ -34,7 +34,7 @@ export default function Auth() {
         setUser(data.user);
         navigate('/');
       } else {
-        const { data, error: authError } = await supabase.auth.signUp({
+        const { error: authError } = await supabase.auth.signUp({
           email: form.email,
           password: form.password,
           options: {
@@ -88,7 +88,7 @@ export default function Auth() {
                 <CheckCircle2 size={32} />
               </div>
               <h2 className="mb-8 font-bold">Check your email</h2>
-              <p className="text-sm text-muted mb-24">We've sent a verification link to<br/><strong>{form.email}</strong></p>
+              <p className="text-sm text-muted mb-24">We&apos;ve sent a verification link to<br/><strong>{form.email}</strong></p>
               <button className="btn btn-ghost btn-sm" onClick={() => setSuccess(false)}>
                 Back to Login
               </button>

@@ -9,7 +9,7 @@ const loadLS = (key, fallback) => {
   catch { return fallback; }
 };
 const saveLS = (key, value) => {
-  try { localStorage.setItem(key, JSON.stringify(value)); } catch {}
+  try { localStorage.setItem(key, JSON.stringify(value)); } catch { /* quota / private mode */ }
 };
 const genId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 

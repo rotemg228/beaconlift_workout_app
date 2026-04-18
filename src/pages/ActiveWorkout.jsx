@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Plus, CheckCircle2, Circle, ChevronDown, ChevronUp, Trash2, Timer, Trophy, Search, Dumbbell } from 'lucide-react';
@@ -152,7 +152,7 @@ function ExercisePicker({ onSelect, onClose }) {
 }
 
 // ─── SET ROW ──────────────────────────────────────────────
-function SetRow({ set, index, exerciseId, onUpdate, onRemove, onComplete, isCompleted }) {
+function SetRow({ set, index, exerciseId: _exerciseId, onUpdate, onRemove: _onRemove, onComplete, isCompleted: _isCompleted }) {
   return (
     <motion.div
       layout
@@ -226,9 +226,8 @@ function SetRow({ set, index, exerciseId, onUpdate, onRemove, onComplete, isComp
 }
 
 // ─── EXERCISE CARD ───────────────────────────────────────
-function ExerciseCard({ sessionEx, onAddSet, onRemoveSet, onUpdateSet, onCompleteSet, onRemoveExercise, restTimer }) {
+function ExerciseCard({ sessionEx, onAddSet, onRemoveSet, onUpdateSet, onCompleteSet, onRemoveExercise }) {
   const { getExercise } = useExerciseStore();
-  const { activeSession } = useWorkoutStore();
   const ex = getExercise(sessionEx.exerciseId);
   const [collapsed, setCollapsed] = useState(false);
 
@@ -316,7 +315,6 @@ function FinishModal({ session, onConfirm, onCancel }) {
   const completedSets = session.exercises.reduce((t, e) => t + e.sets.filter(s => s.completed && !s.isWarmup).length, 0);
   const totalSets = session.exercises.reduce((t, e) => t + e.sets.filter(s => !s.isWarmup).length, 0);
   const prs = session.exercises.reduce((t, e) => t + e.sets.filter(s => s.isPR).length, 0);
-  const { unit } = useSettingsStore.getState();
 
   const handleFinish = () => {
     onConfirm(saveAsTemplate);
@@ -328,7 +326,7 @@ function FinishModal({ session, onConfirm, onCancel }) {
         <div className="text-center mb-16">
           <div style={{ fontSize: '3rem', marginBottom: 8 }}>💪</div>
           <h2>Workout Complete!</h2>
-          <p className="text-sm text-muted">Great work — here's your summary</p>
+          <p className="text-sm text-muted">Great work — here&apos;s your summary</p>
         </div>
 
         <div className="stat-grid mb-24">
@@ -427,6 +425,7 @@ export default function ActiveWorkout() {
 
   useEffect(() => {
     if (!activeSession && !showTemplatePicker) navigate('/');
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only react when session cleared
   }, [activeSession]);
 
   const handleCompleteSet = (exerciseId, setId) => {
@@ -527,7 +526,6 @@ export default function ActiveWorkout() {
             onUpdateSet={updateSet}
             onCompleteSet={(exId, setId) => handleCompleteSet(exId, setId)}
             onRemoveExercise={removeExerciseFromSession}
-            restTimer={restTimer}
           />
         ))}
       </AnimatePresence>
@@ -544,7 +542,7 @@ export default function ActiveWorkout() {
       {activeSession.exercises.length === 0 && (
         <div className="empty-state">
           <Dumbbell size={40} color="var(--color-text-muted)" style={{ opacity: 0.4 }} />
-          <p>Tap "Add Exercise" to get started</p>
+          <p>{'Tap "Add Exercise" to get started'}</p>
         </div>
       )}
 

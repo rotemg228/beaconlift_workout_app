@@ -1,7 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Flame, Dumbbell, Clock, TrendingUp, ChevronRight, Plus, Zap, Trophy, Wrench } from 'lucide-react';
-import { useWorkoutStore, useTemplateStore, useExerciseStore, useSettingsStore, useUserStore } from '../store';
+import { useWorkoutStore, useTemplateStore, useSettingsStore, useUserStore } from '../store';
 import { format, parseISO, isToday, isYesterday, differenceInDays } from 'date-fns';
 
 function StreakCount(sessions) {
@@ -37,7 +37,6 @@ function getDuration(session) {
 export default function Dashboard() {
   const { sessions, activeSession, startWorkout } = useWorkoutStore();
   const { templates } = useTemplateStore();
-  const { exercises } = useExerciseStore();
   const { unit, name } = useSettingsStore();
   const navigate = useNavigate();
 
