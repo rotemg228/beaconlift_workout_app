@@ -1,15 +1,26 @@
 /**
- * OAuth / magic-link return URL. Must be listed in Supabase:
+ * OAuth / email-confirm return URL. Must appear in Supabase:
  * Authentication → URL Configuration → Redirect URLs.
- * Optional VITE_AUTH_REDIRECT_URL on Vercel if previews use varying origins (set to production URL).
+ *
+ * Set VITE_AUTH_REDIRECT_URL on Vercel to your production origin only if needed
+ * (e.g. https://your-app.vercel.app). Never set it to localhost on Vercel.
  */
 export function getAuthRedirectUrl() {
+  const pageOrigin =
+    typeof window !== 'undefined' && window.location?.origin ? window.location.origin : '';
+
   const explicit = import.meta.env.VITE_AUTH_REDIRECT_URL?.trim();
   if (explicit && /^https?:\/\//i.test(explicit)) {
-    return explicit.replace(/\/$/, '');
+    const clean = explicit.replace(/\/$/, '');
+    const explicitIsLocal = /localhost|127\.0\.0\.1/i.test(clean);
+    const pageIsHttpsProd =
+      pageOrigin.startsWith('https://') && !/localhost|127\.0\.0\.1/i.test(pageOrigin);
+    // Avoid a mistaken Vercel env (localhost) forcing OAuth back to your PC
+    if (explicitIsLocal && pageIsHttpsProd) {
+      return pageOrigin;
+    }
+    return clean;
   }
-  if (typeof window !== 'undefined' && window.location?.origin) {
-    return window.location.origin;
-  }
-  return '';
+
+  return pageOrigin;
 }
