@@ -13,8 +13,12 @@ import ProfilePage from './pages/ProfilePage';
 import Tools from './pages/Tools';
 import Login from './pages/Login';
 import Pricing from './pages/Pricing';
+import PrivacyPolicy from './pages/PrivacyPolicy';
+import RefundPolicy from './pages/RefundPolicy';
 import ProModal from './components/ProModal';
 import './styles/index.css';
+
+const PUBLIC_PATHS = ['/login', '/pricing', '/privacy', '/refunds'];
 
 const pageVariants = {
   initial: { opacity: 0, y: 10 },
@@ -27,7 +31,7 @@ function NavBar() {
   const { activeSession } = useWorkoutStore();
   const path = location.pathname;
 
-  if (path === '/login' || path === '/pricing') return null;
+  if (PUBLIC_PATHS.includes(path)) return null;
 
   const navItems = [
     { to: '/',          icon: Home,       label: 'Home'     },
@@ -111,7 +115,7 @@ function AppRoutes() {
     return <Navigate to="/" replace />;
   }
 
-  if (!user && !isGuest && location.pathname !== '/login' && location.pathname !== '/pricing') {
+  if (!user && !isGuest && !PUBLIC_PATHS.includes(location.pathname)) {
     return <Navigate to="/login" replace />;
   }
 
@@ -135,6 +139,8 @@ function AppRoutes() {
           <Route path="/tools"       element={<Tools />} />
           <Route path="/login"       element={<Login onFinish={() => setIsGuest(true)} />} />
           <Route path="/pricing"     element={<Pricing />} />
+          <Route path="/privacy"     element={<PrivacyPolicy />} />
+          <Route path="/refunds"     element={<RefundPolicy />} />
         </Routes>
       </motion.div>
     </AnimatePresence>

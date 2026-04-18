@@ -163,10 +163,20 @@ export default function Pricing() {
           </section>
         </div>
 
-        <p className="text-xs text-muted text-center" style={{ lineHeight: 1.6 }}>
-          BeaconLift is a workout tracking application. For billing support, use the receipt or customer portal from your payment
-          provider.
-        </p>
+        <div className="flex-col gap-8 items-center text-center">
+          <p className="text-xs text-muted" style={{ lineHeight: 1.6 }}>
+            BeaconLift is a workout tracking application. For billing support, use the receipt or customer portal from your payment
+            provider.
+          </p>
+          <div className="flex gap-16 justify-center" style={{ flexWrap: 'wrap' }}>
+            <Link to="/privacy" className="text-xs text-accent font-semibold" style={{ textDecoration: 'none' }}>
+              Privacy policy
+            </Link>
+            <Link to="/refunds" className="text-xs text-accent font-semibold" style={{ textDecoration: 'none' }}>
+              Refund policy
+            </Link>
+          </div>
+        </div>
       </motion.div>
     </div>
   );
