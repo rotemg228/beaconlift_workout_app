@@ -12,6 +12,7 @@ import Progress from './pages/Progress';
 import ProfilePage from './pages/ProfilePage';
 import Tools from './pages/Tools';
 import Login from './pages/Login';
+import Pricing from './pages/Pricing';
 import ProModal from './components/ProModal';
 import './styles/index.css';
 
@@ -26,7 +27,7 @@ function NavBar() {
   const { activeSession } = useWorkoutStore();
   const path = location.pathname;
 
-  if (path === '/login') return null;
+  if (path === '/login' || path === '/pricing') return null;
 
   const navItems = [
     { to: '/',          icon: Home,       label: 'Home'     },
@@ -110,7 +111,7 @@ function AppRoutes() {
     return <Navigate to="/" replace />;
   }
 
-  if (!user && !isGuest && location.pathname !== '/login') {
+  if (!user && !isGuest && location.pathname !== '/login' && location.pathname !== '/pricing') {
     return <Navigate to="/login" replace />;
   }
 
@@ -133,6 +134,7 @@ function AppRoutes() {
           <Route path="/profile"     element={<ProfilePage />} />
           <Route path="/tools"       element={<Tools />} />
           <Route path="/login"       element={<Login onFinish={() => setIsGuest(true)} />} />
+          <Route path="/pricing"     element={<Pricing />} />
         </Routes>
       </motion.div>
     </AnimatePresence>
