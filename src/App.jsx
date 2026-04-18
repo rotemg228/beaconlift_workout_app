@@ -108,6 +108,21 @@ function AppRoutes() {
     return () => subscription.unsubscribe();
   }, [setUser, syncProfile, syncSessions, syncTemplates, syncMeasurements]);
 
+  // When returning from Gumroad (or another tab), refresh Plus status from Supabase
+  useEffect(() => {
+    const refresh = () => {
+      if (document.visibilityState !== 'visible') return;
+      const u = useUserStore.getState().user;
+      if (u) useUserStore.getState().syncProfile(u);
+    };
+    document.addEventListener('visibilitychange', refresh);
+    window.addEventListener('focus', refresh);
+    return () => {
+      document.removeEventListener('visibilitychange', refresh);
+      window.removeEventListener('focus', refresh);
+    };
+  }, []);
+
   if (!authReady) {
     return null;
   }

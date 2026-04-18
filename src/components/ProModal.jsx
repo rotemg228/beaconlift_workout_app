@@ -1,19 +1,67 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Crown, Cloud, Star, ShieldCheck, TrendingUp, ExternalLink } from 'lucide-react';
+import {
+  X,
+  Crown,
+  Cloud,
+  Infinity,
+  BarChart3,
+  Trophy,
+  Sparkles,
+  ExternalLink,
+  Smartphone,
+} from 'lucide-react';
 import { useUserStore } from '../store';
 import { buildGumroadCheckoutUrl } from '../utils/gumroadCheckout';
 
 const PRO_FEATURES = [
-  { icon: Cloud,      title: 'Cloud Sync',         desc: 'Access your workouts on any device.' },
-  { icon: Star,       title: 'Unlimited Templates', desc: 'Create as many custom routines as you want.' },
-  { icon: TrendingUp, title: 'Advanced Analytics',  desc: 'Unlock volume trends and muscle split charts.' },
-  { icon: ShieldCheck,title: 'Verified Profile',   desc: 'Get the exclusive BeaconLift Plus badge.' },
+  {
+    icon: Infinity,
+    title: 'Unlimited routines',
+    desc: 'Free caps custom programs at 3. Plus removes the ceiling—split days, specialties, whatever you run.',
+    tag: 'vs 3 on Free',
+  },
+  {
+    icon: Cloud,
+    title: 'Backup & sync',
+    desc: 'Templates and completed workouts stay tied to your account. Reinstall or switch phones without losing logs.',
+    tag: 'Cloud',
+  },
+  {
+    icon: BarChart3,
+    title: 'Progress that earns the name',
+    desc: 'Volume trends, muscle focus, and history so you see momentum—not just a list of past sessions.',
+    tag: 'Analytics',
+  },
+  {
+    icon: Trophy,
+    title: 'PRs that stick',
+    desc: 'Celebrate bests per lift and keep a clear record of what moved when you leveled up.',
+    tag: 'PRs',
+  },
+  {
+    icon: Sparkles,
+    title: 'Plus on your profile',
+    desc: 'Crown badge and verified Plus status—so your training identity matches the work you put in.',
+    tag: 'Badge',
+  },
+  {
+    icon: Smartphone,
+    title: 'Built for your phone',
+    desc: 'Tap-first layout, thumb reach, and PWA install—train on the floor, not at a desk.',
+    tag: 'Mobile',
+  },
 ];
 
 export default function ProModal() {
-  const { isProModalOpen, setProModalOpen, user } = useUserStore();
+  const { isProModalOpen, setProModalOpen, user, profile } = useUserStore();
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (isProModalOpen && profile.isPro) {
+      setProModalOpen(false);
+    }
+  }, [isProModalOpen, profile.isPro, setProModalOpen]);
 
   if (!isProModalOpen) return null;
 
@@ -46,79 +94,92 @@ export default function ProModal() {
       setError('Invalid checkout URL. Use a full https://…gumroad.com/l/… link in VITE_GUMROAD_CHECKOUT_URL.');
       return;
     }
+    setError('');
+    setProModalOpen(false);
   };
 
   return (
     <AnimatePresence>
       <div
-        className="modal-overlay animate-fadeIn"
-        style={{ zIndex: 1000, alignItems: 'center' }}
+        className="modal-overlay modal-center pro-modal-overlay animate-fadeIn"
         onClick={() => setProModalOpen(false)}
       >
         <motion.div
-          className="modal-box relative overflow-hidden"
+          className="modal-box pro-modal-box"
           onClick={e => e.stopPropagation()}
           style={{ pointerEvents: 'auto' }}
           initial={{ opacity: 0, scale: 0.9, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.9, y: 20 }}
         >
-          <div style={{
-            position: 'absolute', top: '-10%', left: '-10%', width: '120%', height: '40%',
-            background: 'radial-gradient(ellipse at center, var(--color-accent-glow), transparent 70%)',
-            zIndex: 0, pointerEvents: 'none'
-          }} />
+          <div
+            className="pro-modal-glow"
+            aria-hidden
+          />
 
-          <button className="btn-icon" style={{ position: 'absolute', top: 16, right: 16, zIndex: 10 }} onClick={() => setProModalOpen(false)}>
+          <button
+            type="button"
+            className="btn-icon pro-modal-close"
+            onClick={() => setProModalOpen(false)}
+            aria-label="Close"
+          >
             <X size={18} />
           </button>
 
-          <div className="flex-col items-center text-center relative z-1">
-            <div className="icon-circle mb-16" style={{ background: 'var(--color-accent)', color: '#000', width: 64, height: 64 }}>
-              <Crown size={32} />
+          <div className="flex-col items-center text-center relative z-1 pro-modal-inner">
+            <div className="icon-circle mb-12 pro-modal-hero-icon">
+              <Crown size={30} />
             </div>
 
-            <h2 className="display-font text-3xl mb-4">BeaconLift Plus</h2>
-            <p className="text-muted text-sm mb-24">Unlock the ultimate training experience.</p>
+            <h2 className="display-font text-3xl mb-8">BeaconLift Plus</h2>
+            <p className="text-muted text-sm mb-16">
+              Serious training lives on your phone. Plus is for when you outgrow the basics.
+            </p>
 
-            <div className="flex-col gap-16 w-full text-left mb-32">
+            <p className="section-title w-full text-left mb-12">What changes</p>
+            <div className="pro-feature-grid">
               {PRO_FEATURES.map((feat, i) => (
-                <div key={i} className="flex gap-12 items-start">
-                  <div className="icon-circle" style={{ width: 32, height: 32, background: 'rgba(255,107,0,0.1)', color: 'var(--color-accent)' }}>
-                    <feat.icon size={16} />
+                <div key={i} className="pro-feature-card">
+                  <div className="pro-feature-card-top">
+                    <div className="icon-circle pro-feature-icon">
+                      <feat.icon size={18} />
+                    </div>
+                    <span className="badge badge-accent pro-feature-tag">{feat.tag}</span>
                   </div>
-                  <div>
-                    <div className="text-sm font-semibold">{feat.title}</div>
-                    <div className="text-xs text-muted leading-relaxed">{feat.desc}</div>
-                  </div>
+                  <div className="text-sm font-semibold text-left mb-8">{feat.title}</div>
+                  <div className="text-xs text-muted leading-relaxed text-left">{feat.desc}</div>
                 </div>
               ))}
             </div>
 
-            <div className="card w-full mb-24" style={{ background: 'var(--color-surface-2)', border: '1px solid var(--color-accent)' }}>
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="text-sm font-bold">BeaconLift Plus Monthly</div>
-                  <div className="text-xs text-muted">7-day trial on Gumroad · then $1.99/mo (set in Gumroad)</div>
+            <div className="card w-full mb-16 pro-card-pricing">
+              <div className="flex items-center justify-between gap-12">
+                <div className="text-left">
+                  <div className="text-sm font-bold">Monthly · Gumroad</div>
+                  <div className="text-xs text-muted mt-8">
+                    7-day trial · then $1.99/mo (set in Gumroad)
+                  </div>
                 </div>
-                <div className="text-lg font-bold text-accent">$1.99</div>
+                <div className="text-lg font-bold text-accent shrink-0">$1.99</div>
               </div>
             </div>
 
             {canCheckout ? (
               <a
                 href={checkoutHref}
-                className="btn btn-primary btn-full"
-                style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+                className="btn btn-primary btn-full pro-checkout-btn"
+                style={{ textDecoration: 'none' }}
+                target="_blank"
+                rel="noopener noreferrer"
                 onClick={onCheckoutClick}
               >
                 <ExternalLink size={18} />
-                Continue to checkout
+                Open checkout in new tab
               </a>
             ) : (
-              <button type="button" className="btn btn-primary btn-full" disabled>
+              <button type="button" className="btn btn-primary btn-full pro-checkout-btn" disabled>
                 <ExternalLink size={18} />
-                Continue to checkout
+                Open checkout in new tab
               </button>
             )}
 
@@ -132,8 +193,8 @@ export default function ProModal() {
                 Missing <code style={{ fontSize: '0.7rem' }}>VITE_GUMROAD_CHECKOUT_URL</code> on this deploy. Add it in Vercel → Environment Variables → Redeploy.
               </p>
             )}
-            <p className="text-xs text-muted mt-12">
-              Secure checkout and receipts are handled by Gumroad. Use the same email as your BeaconLift account if possible.
+            <p className="text-xs text-muted mt-16">
+              After you pay, come back here—Plus turns on automatically (same email as your account helps). This tab stays on BeaconLift.
             </p>
           </div>
         </motion.div>
