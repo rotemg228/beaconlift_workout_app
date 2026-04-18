@@ -31,6 +31,9 @@ export default function LegalDocPage({ title, children, updated = 'April 18, 202
           <Link to="/refunds" className="text-xs text-muted font-semibold" style={{ textDecoration: 'none' }}>
             Refunds
           </Link>
+          <Link to="/terms" className="text-xs text-muted font-semibold" style={{ textDecoration: 'none' }}>
+            Terms
+          </Link>
           <Link to="/login" className="text-xs text-muted font-semibold" style={{ textDecoration: 'none' }}>
             Sign in
           </Link>

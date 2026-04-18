@@ -15,10 +15,11 @@ import Login from './pages/Login';
 import Pricing from './pages/Pricing';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import RefundPolicy from './pages/RefundPolicy';
+import TermsOfService from './pages/TermsOfService';
 import ProModal from './components/ProModal';
 import './styles/index.css';
 
-const PUBLIC_PATHS = ['/login', '/pricing', '/privacy', '/refunds'];
+const PUBLIC_PATHS = ['/login', '/pricing', '/privacy', '/refunds', '/terms'];
 
 const pageVariants = {
   initial: { opacity: 0, y: 10 },
@@ -141,6 +142,7 @@ function AppRoutes() {
           <Route path="/pricing"     element={<Pricing />} />
           <Route path="/privacy"     element={<PrivacyPolicy />} />
           <Route path="/refunds"     element={<RefundPolicy />} />
+          <Route path="/terms"       element={<TermsOfService />} />
         </Routes>
       </motion.div>
     </AnimatePresence>

@@ -175,6 +175,9 @@ export default function Pricing() {
             <Link to="/refunds" className="text-xs text-accent font-semibold" style={{ textDecoration: 'none' }}>
               Refund policy
             </Link>
+            <Link to="/terms" className="text-xs text-accent font-semibold" style={{ textDecoration: 'none' }}>
+              Terms of service
+            </Link>
           </div>
         </div>
       </motion.div>
