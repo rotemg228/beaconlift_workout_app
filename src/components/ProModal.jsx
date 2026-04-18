@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Crown, Cloud, Star, ShieldCheck, TrendingUp, ExternalLink } from 'lucide-react';
 import { useUserStore } from '../store';
@@ -13,12 +13,18 @@ const PRO_FEATURES = [
 export default function ProModal() {
   const { isProModalOpen, setProModalOpen, user } = useUserStore();
   const [error, setError] = useState('');
+  const [navigating, setNavigating] = useState(false);
+
+  useEffect(() => {
+    if (isProModalOpen) setNavigating(false);
+  }, [isProModalOpen]);
 
   if (!isProModalOpen) return null;
 
   const gumroadBase = import.meta.env.VITE_GUMROAD_CHECKOUT_URL?.trim();
 
   const handleGumroadCheckout = () => {
+    if (navigating) return;
     if (!user?.id || !user?.email) {
       setError('Please sign in with a real account before subscribing.');
       return;
@@ -32,8 +38,10 @@ export default function ProModal() {
       const url = new URL(gumroadBase);
       url.searchParams.set('beaconlift_user_id', user.id);
       url.searchParams.set('email', user.email);
+      setNavigating(true);
       window.location.href = url.toString();
     } catch {
+      setNavigating(false);
       setError('Invalid checkout URL. Check VITE_GUMROAD_CHECKOUT_URL.');
     }
   };
@@ -90,9 +98,14 @@ export default function ProModal() {
               </div>
             </div>
 
-            <button type="button" className="btn btn-primary btn-full" onClick={handleGumroadCheckout}>
+            <button
+              type="button"
+              className="btn btn-primary btn-full"
+              onClick={handleGumroadCheckout}
+              disabled={navigating}
+            >
               <ExternalLink size={18} />
-              Continue to checkout
+              {navigating ? 'Opening checkout…' : 'Continue to checkout'}
             </button>
 
             {error && <p className="text-xs text-danger mt-12">{error}</p>}
