@@ -40,7 +40,7 @@ export default async function handler(req, res) {
           },
         ],
         subscription_data: {
-          trial_period_days: 14,
+          trial_period_days: 7,
           metadata: { user_id: userId, plan: 'plus' },
         },
         metadata: { user_id: userId, plan: 'plus', payment_method: paymentMethod || 'card' },

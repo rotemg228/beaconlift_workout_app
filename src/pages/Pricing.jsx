@@ -129,7 +129,7 @@ export default function Pricing() {
               </div>
 
               <p className="text-xs text-muted mb-16" style={{ lineHeight: 1.5 }}>
-                <strong className="text-secondary">14-day free trial</strong>, then $1.99 USD per month. Cancel anytime subject to
+                <strong className="text-secondary">7-day free trial</strong>, then $1.99 USD per month. Cancel anytime subject to
                 checkout terms. Payment is processed by our reseller (e.g. Gumroad); your statement may show their name.
               </p>
 

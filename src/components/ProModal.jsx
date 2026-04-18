@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Crown, Cloud, Star, ShieldCheck, TrendingUp, ExternalLink } from 'lucide-react';
 import { useUserStore } from '../store';
+import { buildGumroadCheckoutUrl } from '../utils/gumroadCheckout';
 
 const PRO_FEATURES = [
   { icon: Cloud,      title: 'Cloud Sync',         desc: 'Access your workouts on any device.' },
@@ -13,48 +14,51 @@ const PRO_FEATURES = [
 export default function ProModal() {
   const { isProModalOpen, setProModalOpen, user } = useUserStore();
   const [error, setError] = useState('');
-  const [showBusy, setShowBusy] = useState(false);
-  const checkoutStartedRef = useRef(false);
-
-  useEffect(() => {
-    if (isProModalOpen) checkoutStartedRef.current = false;
-  }, [isProModalOpen]);
 
   if (!isProModalOpen) return null;
 
   const gumroadBase = import.meta.env.VITE_GUMROAD_CHECKOUT_URL?.trim();
 
-  const handleGumroadCheckout = () => {
-    if (checkoutStartedRef.current) return;
+  const checkoutHref = useMemo(
+    () =>
+      buildGumroadCheckoutUrl(gumroadBase, {
+        userId: user?.id,
+        email: user?.email,
+      }),
+    [gumroadBase, user?.id, user?.email]
+  );
+
+  const canCheckout = !!(user?.id && user?.email && checkoutHref);
+
+  const onCheckoutClick = (e) => {
     if (!user?.id || !user?.email) {
+      e.preventDefault();
       setError('Please sign in with a real account before subscribing.');
       return;
     }
     if (!gumroadBase) {
-      setError('Checkout is not configured. Add VITE_GUMROAD_CHECKOUT_URL in hosting env and redeploy.');
+      e.preventDefault();
+      setError('Checkout is not configured. Add VITE_GUMROAD_CHECKOUT_URL in Vercel and redeploy.');
       return;
     }
-    setError('');
-    try {
-      const url = new URL(gumroadBase);
-      url.searchParams.set('beaconlift_user_id', user.id);
-      url.searchParams.set('email', user.email);
-      checkoutStartedRef.current = true;
-      setShowBusy(true);
-      window.location.href = url.toString();
-    } catch {
-      checkoutStartedRef.current = false;
-      setShowBusy(false);
-      setError('Invalid checkout URL. Check VITE_GUMROAD_CHECKOUT_URL.');
+    if (!checkoutHref) {
+      e.preventDefault();
+      setError('Invalid checkout URL. Use a full https://…gumroad.com/l/… link in VITE_GUMROAD_CHECKOUT_URL.');
+      return;
     }
   };
 
   return (
     <AnimatePresence>
-      <div className="modal-overlay animate-fadeIn" style={{ zIndex: 1000, alignItems: 'center' }} onClick={() => setProModalOpen(false)}>
+      <div
+        className="modal-overlay animate-fadeIn"
+        style={{ zIndex: 1000, alignItems: 'center' }}
+        onClick={() => setProModalOpen(false)}
+      >
         <motion.div
           className="modal-box relative overflow-hidden"
           onClick={e => e.stopPropagation()}
+          style={{ pointerEvents: 'auto' }}
           initial={{ opacity: 0, scale: 0.9, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.9, y: 20 }}
@@ -95,23 +99,39 @@ export default function ProModal() {
               <div className="flex items-center justify-between">
                 <div>
                   <div className="text-sm font-bold">BeaconLift Plus Monthly</div>
-                  <div className="text-xs text-muted">Billed on Gumroad · match trial/price in your product</div>
+                  <div className="text-xs text-muted">7-day trial on Gumroad · then $1.99/mo (set in Gumroad)</div>
                 </div>
                 <div className="text-lg font-bold text-accent">$1.99</div>
               </div>
             </div>
 
-            <button
-              type="button"
-              className="btn btn-primary btn-full"
-              onClick={handleGumroadCheckout}
-              disabled={showBusy}
-            >
-              <ExternalLink size={18} />
-              {showBusy ? 'Opening checkout…' : 'Continue to checkout'}
-            </button>
+            {canCheckout ? (
+              <a
+                href={checkoutHref}
+                className="btn btn-primary btn-full"
+                style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+                onClick={onCheckoutClick}
+              >
+                <ExternalLink size={18} />
+                Continue to checkout
+              </a>
+            ) : (
+              <button type="button" className="btn btn-primary btn-full" disabled>
+                <ExternalLink size={18} />
+                Continue to checkout
+              </button>
+            )}
 
-            {error && <p className="text-xs text-danger mt-12">{error}</p>}
+            {error && (
+              <p className="text-xs text-danger mt-12" style={{ maxWidth: 280 }}>
+                {error}
+              </p>
+            )}
+            {!gumroadBase && (
+              <p className="text-xs text-danger mt-12" style={{ maxWidth: 280 }}>
+                Missing <code style={{ fontSize: '0.7rem' }}>VITE_GUMROAD_CHECKOUT_URL</code> on this deploy. Add it in Vercel → Environment Variables → Redeploy.
+              </p>
+            )}
             <p className="text-xs text-muted mt-12">
               Secure checkout and receipts are handled by Gumroad. Use the same email as your BeaconLift account if possible.
             </p>
