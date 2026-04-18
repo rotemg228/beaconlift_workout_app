@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   X,
@@ -53,30 +53,23 @@ const PRO_FEATURES = [
   },
 ];
 
-export default function ProModal() {
-  const { isProModalOpen, setProModalOpen, user, profile } = useUserStore();
+/** Only mounted while paywall is open — keeps hook order trivially stable */
+function ProModalContent() {
+  const { setProModalOpen, user, profile } = useUserStore();
   const [error, setError] = useState('');
 
   const gumroadBase = import.meta.env.VITE_GUMROAD_CHECKOUT_URL?.trim();
-
-  const checkoutHref = useMemo(
-    () =>
-      buildGumroadCheckoutUrl(gumroadBase, {
-        userId: user?.id,
-        email: user?.email,
-      }),
-    [gumroadBase, user?.id, user?.email]
-  );
-
+  const checkoutHref = buildGumroadCheckoutUrl(gumroadBase, {
+    userId: user?.id,
+    email: user?.email,
+  });
   const canCheckout = !!(user?.id && user?.email && checkoutHref);
 
   useEffect(() => {
-    if (isProModalOpen && profile.isPro) {
+    if (profile.isPro) {
       setProModalOpen(false);
     }
-  }, [isProModalOpen, profile.isPro, setProModalOpen]);
-
-  if (!isProModalOpen) return null;
+  }, [profile.isPro, setProModalOpen]);
 
   const onCheckoutClick = (e) => {
     if (!user?.id || !user?.email) {
@@ -112,10 +105,7 @@ export default function ProModal() {
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.9, y: 20 }}
         >
-          <div
-            className="pro-modal-glow"
-            aria-hidden
-          />
+          <div className="pro-modal-glow" aria-hidden />
 
           <button
             type="button"
@@ -201,4 +191,10 @@ export default function ProModal() {
       </div>
     </AnimatePresence>
   );
+}
+
+export default function ProModal() {
+  const isProModalOpen = useUserStore(s => s.isProModalOpen);
+  if (!isProModalOpen) return null;
+  return <ProModalContent />;
 }
