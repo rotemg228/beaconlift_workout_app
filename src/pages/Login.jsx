@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { motion } from 'framer-motion'
 import { Globe, ChevronRight, Mail, Lock, User, AlertCircle, CheckCircle2 } from 'lucide-react'
 import { supabase } from '../supabase'
+import { getAuthRedirectUrl } from '../authRedirect'
 import { useUserStore } from '../store'
 import { useNavigate } from 'react-router-dom'
 
@@ -18,11 +19,12 @@ export default function Login({ onFinish }) {
     try {
       setError('')
       setLoading(true)
+      const redirectTo = getAuthRedirectUrl()
       const { error } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
-          redirectTo: window.location.origin
-        }
+          redirectTo: redirectTo || undefined,
+        },
       })
       if (error) throw error
     } catch (error) {
@@ -46,7 +48,7 @@ export default function Login({ onFinish }) {
           email: form.email.trim(),
           password: form.password,
           options: {
-            emailRedirectTo: window.location.origin,
+            emailRedirectTo: getAuthRedirectUrl() || undefined,
             data: { username },
           },
         })
