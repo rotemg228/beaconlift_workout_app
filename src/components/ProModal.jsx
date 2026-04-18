@@ -57,14 +57,6 @@ export default function ProModal() {
   const { isProModalOpen, setProModalOpen, user, profile } = useUserStore();
   const [error, setError] = useState('');
 
-  useEffect(() => {
-    if (isProModalOpen && profile.isPro) {
-      setProModalOpen(false);
-    }
-  }, [isProModalOpen, profile.isPro, setProModalOpen]);
-
-  if (!isProModalOpen) return null;
-
   const gumroadBase = import.meta.env.VITE_GUMROAD_CHECKOUT_URL?.trim();
 
   const checkoutHref = useMemo(
@@ -77,6 +69,14 @@ export default function ProModal() {
   );
 
   const canCheckout = !!(user?.id && user?.email && checkoutHref);
+
+  useEffect(() => {
+    if (isProModalOpen && profile.isPro) {
+      setProModalOpen(false);
+    }
+  }, [isProModalOpen, profile.isPro, setProModalOpen]);
+
+  if (!isProModalOpen) return null;
 
   const onCheckoutClick = (e) => {
     if (!user?.id || !user?.email) {
