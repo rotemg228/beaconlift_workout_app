@@ -36,3 +36,7 @@ lint_errors.txt
 
 # Obsidian vault (local second brain; keep out of repo)
 WorkoutTracker/
+
+# Unrelated project (not part of BeaconLift site)
+promo-therespawnrig/
+promo-respawnrig/
