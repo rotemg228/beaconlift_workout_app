@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Crown, Cloud, Star, ShieldCheck, TrendingUp, ExternalLink } from 'lucide-react';
 import { useUserStore } from '../store';
@@ -13,10 +13,11 @@ const PRO_FEATURES = [
 export default function ProModal() {
   const { isProModalOpen, setProModalOpen, user } = useUserStore();
   const [error, setError] = useState('');
-  const [navigating, setNavigating] = useState(false);
+  const [showBusy, setShowBusy] = useState(false);
+  const checkoutStartedRef = useRef(false);
 
   useEffect(() => {
-    if (isProModalOpen) setNavigating(false);
+    if (isProModalOpen) checkoutStartedRef.current = false;
   }, [isProModalOpen]);
 
   if (!isProModalOpen) return null;
@@ -24,7 +25,7 @@ export default function ProModal() {
   const gumroadBase = import.meta.env.VITE_GUMROAD_CHECKOUT_URL?.trim();
 
   const handleGumroadCheckout = () => {
-    if (navigating) return;
+    if (checkoutStartedRef.current) return;
     if (!user?.id || !user?.email) {
       setError('Please sign in with a real account before subscribing.');
       return;
@@ -38,10 +39,12 @@ export default function ProModal() {
       const url = new URL(gumroadBase);
       url.searchParams.set('beaconlift_user_id', user.id);
       url.searchParams.set('email', user.email);
-      setNavigating(true);
+      checkoutStartedRef.current = true;
+      setShowBusy(true);
       window.location.href = url.toString();
     } catch {
-      setNavigating(false);
+      checkoutStartedRef.current = false;
+      setShowBusy(false);
       setError('Invalid checkout URL. Check VITE_GUMROAD_CHECKOUT_URL.');
     }
   };
@@ -102,10 +105,10 @@ export default function ProModal() {
               type="button"
               className="btn btn-primary btn-full"
               onClick={handleGumroadCheckout}
-              disabled={navigating}
+              disabled={showBusy}
             >
               <ExternalLink size={18} />
-              {navigating ? 'Opening checkout…' : 'Continue to checkout'}
+              {showBusy ? 'Opening checkout…' : 'Continue to checkout'}
             </button>
 
             {error && <p className="text-xs text-danger mt-12">{error}</p>}
