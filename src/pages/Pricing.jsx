@@ -9,6 +9,10 @@ import {
   Dumbbell,
   History,
   LayoutList,
+  Sparkles,
+  Gift,
+  Zap,
+  Activity,
 } from 'lucide-react';
 import { useUserStore } from '../store';
 
@@ -23,6 +27,29 @@ const PLUS_FEATURES = [
   { icon: Star, title: 'Unlimited templates', desc: 'Create as many custom routines as you want.' },
   { icon: TrendingUp, title: 'Advanced analytics', desc: 'Volume trends and muscle split insights.' },
   { icon: ShieldCheck, title: 'Verified profile', desc: 'BeaconLift Plus badge on your profile.' },
+];
+
+const UPCOMING_FEATURES = [
+  {
+    icon: Activity,
+    title: 'Adaptive training suggestions',
+    desc: 'Weekly suggestions that react to consistency and session history.',
+  },
+  {
+    icon: Zap,
+    title: 'Quick-start workout mode',
+    desc: 'Start training in two taps with your recent routine preloaded.',
+  },
+  {
+    icon: Gift,
+    title: 'Giftable Plus passes',
+    desc: 'Send 1, 3, or 12 months of Plus to a friend directly from your account.',
+  },
+  {
+    icon: Sparkles,
+    title: 'Smarter progression nudges',
+    desc: 'Personalized prompts for when to push reps, load, or deload.',
+  },
 ];
 
 export default function Pricing() {
@@ -162,6 +189,35 @@ export default function Pricing() {
             </div>
           </section>
         </div>
+
+        <section
+          className="card w-full"
+          style={{ border: '1px solid var(--color-border)', background: 'var(--color-surface)' }}
+        >
+          <div className="flex items-center justify-between mb-16">
+            <div>
+              <h2 className="text-lg font-bold">Coming next</h2>
+              <p className="text-xs text-muted mt-4">Features in active development for mobile-first training.</p>
+            </div>
+            <span className="badge badge-accent">Roadmap</span>
+          </div>
+          <ul className="flex-col gap-12">
+            {UPCOMING_FEATURES.map(({ icon: Icon, title, desc }) => (
+              <li key={title} className="flex gap-12 items-start">
+                <div
+                  className="icon-circle shrink-0"
+                  style={{ width: 32, height: 32, background: 'var(--color-surface-2)', color: 'var(--color-accent)' }}
+                >
+                  <Icon size={16} />
+                </div>
+                <div>
+                  <div className="text-sm font-semibold">{title}</div>
+                  <div className="text-xs text-muted leading-relaxed">{desc}</div>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </section>
 
         <div className="flex-col gap-8 items-center text-center">
           <p className="text-xs text-muted" style={{ lineHeight: 1.6 }}>

@@ -17,6 +17,7 @@ import PrivacyPolicy from './pages/PrivacyPolicy';
 import RefundPolicy from './pages/RefundPolicy';
 import TermsOfService from './pages/TermsOfService';
 import ProModal from './components/ProModal';
+import { isNativeRuntime, syncRevenueCatPlus } from './revenuecat';
 import './styles/index.css';
 
 const PUBLIC_PATHS = ['/login', '/pricing', '/privacy', '/refunds', '/terms'];
@@ -85,6 +86,12 @@ function AppRoutes() {
         syncSessions(u);
         syncTemplates(u);
         syncMeasurements(u);
+        if (isNativeRuntime()) {
+          syncRevenueCatPlus(u.id, (_customerInfo, isPlus) => {
+            if (!isPlus) return;
+            useUserStore.getState().updateProfile({ isPro: true, plan: 'plus' });
+          }).catch((err) => console.warn('RevenueCat sync failed', err));
+        }
       } else {
         syncProfile(null);
       }
@@ -99,6 +106,12 @@ function AppRoutes() {
         syncSessions(u);
         syncTemplates(u);
         syncMeasurements(u);
+        if (isNativeRuntime()) {
+          syncRevenueCatPlus(u.id, (_customerInfo, isPlus) => {
+            if (!isPlus) return;
+            useUserStore.getState().updateProfile({ isPro: true, plan: 'plus' });
+          }).catch((err) => console.warn('RevenueCat sync failed', err));
+        }
       } else {
         syncProfile(null);
       }

@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Plus, Weight, Ruler, Trash2, ChevronDown, ChevronUp, Check, Bug, MessageCircle, LogOut, Crown, ShieldCheck } from 'lucide-react';
+import { Plus, Weight, Ruler, Trash2, ChevronDown, ChevronUp, Check, Bug, MessageCircle, LogOut, Crown, ShieldCheck, RotateCcw, CalendarClock } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useMeasurementStore, useSettingsStore, useUserStore } from '../store';
 import { supabase } from '../supabase';
 import { format, parseISO } from 'date-fns';
+import { isNativeRuntime, presentCustomerCenter, restorePurchases, getSubscriptionInfo } from '../revenuecat';
 
 const MEASUREMENT_FIELDS = [
   { key: 'chest',      label: 'Chest'       },
@@ -94,11 +95,54 @@ export default function ProfilePage() {
   const [editName, setEditName] = useState(false);
   const [nameInput, setNameInput] = useState(name);
   const [expanded, setExpanded] = useState(false);
+  const [customerCenterBusy, setCustomerCenterBusy] = useState(false);
+  const [customerCenterError, setCustomerCenterError] = useState('');
+  const [restoreBusy, setRestoreBusy] = useState(false);
+  const [restoreMsg, setRestoreMsg] = useState('');
+  const [subInfo, setSubInfo] = useState(null);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
     logout();
   };
+
+  const openCustomerCenter = async () => {
+    try {
+      setCustomerCenterError('');
+      setCustomerCenterBusy(true);
+      await presentCustomerCenter();
+    } catch (err) {
+      setCustomerCenterError(err?.message || 'Could not open subscription management.');
+    } finally {
+      setCustomerCenterBusy(false);
+    }
+  };
+
+  const handleRestore = async () => {
+    try {
+      setRestoreMsg('');
+      setRestoreBusy(true);
+      const { isPlus } = await restorePurchases();
+      if (isPlus) {
+        useUserStore.getState().updateProfile({ isPro: true, plan: 'plus' });
+        setRestoreMsg('✓ Plus restored successfully!');
+        // Refresh sub info
+        getSubscriptionInfo().then(info => setSubInfo(info)).catch(() => {});
+      } else {
+        setRestoreMsg('No active purchases found on this account.');
+      }
+    } catch (err) {
+      setRestoreMsg(err?.message || 'Restore failed. Please try again.');
+    } finally {
+      setRestoreBusy(false);
+    }
+  };
+
+  // Load subscription details on mount (native only)
+  useState(() => {
+    if (!isNativeRuntime()) return;
+    getSubscriptionInfo().then(info => setSubInfo(info)).catch(() => {});
+  });
 
   const latest = getLatest();
   const weightHistory = getWeightHistory().map(d => ({
@@ -201,6 +245,66 @@ export default function ProfilePage() {
             </div>
             <button className="btn btn-primary btn-sm" onClick={() => setProModalOpen(true)}>Get Plus</button>
           </div>
+        </motion.div>
+      )}
+
+      {isNativeRuntime() && (
+        <motion.div className="card mb-12" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.11 }}>
+          <div className="section-title mb-10">Subscription</div>
+
+          {/* Status row */}
+          {profile.isPro ? (
+            <div className="flex items-center gap-10 mb-12 p-10" style={{ background: 'rgba(255,122,0,0.1)', borderRadius: 10, border: '1px solid rgba(255,122,0,0.2)' }}>
+              <Crown size={18} color="var(--color-accent)" />
+              <div style={{ flex: 1 }}>
+                <div className="text-sm font-bold">BeaconLift Plus — Active</div>
+                {subInfo?.periodType === 'trial' && (
+                  <div className="text-xs text-muted">Trial period</div>
+                )}
+                {subInfo?.expirationDate && (
+                  <div className="text-xs text-muted flex items-center gap-4 mt-2">
+                    <CalendarClock size={11} />
+                    Renews {(() => { try { return format(new Date(subInfo.expirationDate), 'MMM d, yyyy'); } catch { return subInfo.expirationDate; } })()}
+                  </div>
+                )}
+                {!subInfo?.expirationDate && subInfo?.productId?.includes('lifetime') && (
+                  <div className="text-xs text-muted">Lifetime — never expires</div>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-center gap-10 mb-12 p-10" style={{ background: 'var(--color-surface-2)', borderRadius: 10 }}>
+              <div style={{ flex: 1 }}>
+                <div className="text-sm font-semibold">Free Plan</div>
+                <div className="text-xs text-muted">Upgrade to unlock unlimited templates and more.</div>
+              </div>
+            </div>
+          )}
+
+          {/* Manage button (Plus only) */}
+          {profile.isPro && (
+            <>
+              <button className="btn btn-secondary btn-full mb-8" onClick={openCustomerCenter} disabled={customerCenterBusy}>
+                {customerCenterBusy ? 'Opening...' : 'Manage subscription'}
+              </button>
+              {customerCenterError && <p className="text-xs text-danger mb-8">{customerCenterError}</p>}
+            </>
+          )}
+
+          {/* Restore Purchases — always visible on native */}
+          <button
+            className="btn btn-ghost btn-full flex items-center justify-center gap-8"
+            onClick={handleRestore}
+            disabled={restoreBusy}
+          >
+            <RotateCcw size={14} />
+            {restoreBusy ? 'Restoring...' : 'Restore Purchases'}
+          </button>
+          {restoreMsg && (
+            <p className={`text-xs mt-8 text-center ${restoreMsg.startsWith('✓') ? 'text-accent' : 'text-muted'}`}>
+              {restoreMsg}
+            </p>
+          )}
         </motion.div>
       )}
 

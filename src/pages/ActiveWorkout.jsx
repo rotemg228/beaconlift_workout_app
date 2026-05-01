@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Plus, CheckCircle2, Circle, ChevronDown, ChevronUp, Trash2, Timer, Trophy, Search, Dumbbell } from 'lucide-react';
+import { X, Plus, CheckCircle2, Circle, ChevronDown, ChevronUp, Trash2, Timer, Trophy, Search, Dumbbell, Target } from 'lucide-react';
 import { useWorkoutStore, useExerciseStore, useTemplateStore, useSettingsStore, useUserStore } from '../store';
 import { useRestTimer, useWorkoutTimer } from '../hooks';
 import { CATEGORIES } from '../data/exercises';
 import CustomSelect from '../components/CustomSelect';
+import { getSessionVolume, getLastSessionBestWeight } from '../utils/trainingInsights';
 
 // ─── PR TOAST ────────────────────────────────────────────
 function PRToast({ exercise, onClose }) {
@@ -228,8 +229,13 @@ function SetRow({ set, index, exerciseId: _exerciseId, onUpdate, onRemove: _onRe
 // ─── EXERCISE CARD ───────────────────────────────────────
 function ExerciseCard({ sessionEx, onAddSet, onRemoveSet, onUpdateSet, onCompleteSet, onRemoveExercise }) {
   const { getExercise } = useExerciseStore();
+  const { sessions } = useWorkoutStore();
+  const { profile } = useUserStore();
+  const { unit } = useSettingsStore();
   const ex = getExercise(sessionEx.exerciseId);
   const [collapsed, setCollapsed] = useState(false);
+  const lastBest = getLastSessionBestWeight(sessions, sessionEx.exerciseId);
+  const loadBump = unit === 'lbs' ? 5 : 2.5;
 
   const completedSets  = sessionEx.sets.filter(s => s.completed && !s.isWarmup).length;
   const totalSets = sessionEx.sets.filter(s => !s.isWarmup).length;
@@ -243,6 +249,17 @@ function ExerciseCard({ sessionEx, onAddSet, onRemoveSet, onUpdateSet, onComplet
         <div>
           <div className="font-bold">{ex.name}</div>
           <div className="text-xs text-muted">{ex.muscleGroups.slice(0, 2).join(' · ')}</div>
+          {lastBest && (
+            <div className="text-xs mt-4" style={{ color: 'var(--color-text-secondary)' }}>
+              Last log: {lastBest.weight}{unit}
+              {lastBest.reps != null ? ` × ${lastBest.reps}` : ''}
+            </div>
+          )}
+          {profile.isPro && lastBest && (
+            <div className="text-xs mt-4" style={{ color: 'var(--color-accent-muted)' }}>
+              Plus coach: try {Math.max(0, (lastBest.weight || 0) + loadBump)}{unit} for similar reps if form is solid.
+            </div>
+          )}
         </div>
         <div className="flex items-center gap-8">
           {totalSets > 0 && (
@@ -410,8 +427,9 @@ function TemplatePicker({ onSelect, onStartBlank, onClose }) {
 // ─── MAIN ACTIVE WORKOUT PAGE ────────────────────────────
 export default function ActiveWorkout() {
   const navigate = useNavigate();
-  const { activeSession, startWorkout, finishWorkout, cancelWorkout, addExerciseToSession, removeExerciseFromSession, addSet, removeSet, updateSet, toggleSetComplete } = useWorkoutStore();
+  const { sessions, activeSession, startWorkout, finishWorkout, cancelWorkout, addExerciseToSession, removeExerciseFromSession, addSet, removeSet, updateSet, toggleSetComplete } = useWorkoutStore();
   const { unit } = useSettingsStore();
+  const { profile } = useUserStore();
 
   const restTimer = useRestTimer();
   const workoutTimer = useWorkoutTimer(activeSession?.startTime);
@@ -481,6 +499,19 @@ export default function ActiveWorkout() {
     t + e.sets.filter(s => s.completed && !s.isWarmup).reduce((tt, s) => tt + s.weight * s.reps, 0), 0
   );
 
+  const plusCoachMessage = (() => {
+    if (!profile.isPro) return null;
+    if (activeSession.templateId) {
+      const prev = sessions.find((s) => s.templateId === activeSession.templateId);
+      if (prev) {
+        const prevVol = getSessionVolume(prev);
+        const pct = prevVol > 0 ? Math.round((volume / prevVol) * 100) : 0;
+        return `Last time on this routine: ${Math.round(prevVol).toLocaleString()} ${unit}. You’re at ${Math.round(volume).toLocaleString()} ${unit} (${pct}% of last session).`;
+      }
+    }
+    return 'Plus coach: aim to match or beat your last session volume, or add one quality set on your main lift.';
+  })();
+
   return (
     <div className="page-content no-topbar" style={{ paddingTop: 0 }}>
       {/* ── Sticky Header ── */}
@@ -514,6 +545,21 @@ export default function ActiveWorkout() {
           </div>
         </div>
       </div>
+
+      {plusCoachMessage && (
+        <div
+          className="card card-sm mb-12"
+          style={{
+            borderColor: 'rgba(255, 107, 0, 0.35)',
+            background: 'linear-gradient(135deg, rgba(255, 107, 0, 0.08), transparent)',
+          }}
+        >
+          <div className="flex items-start gap-10">
+            <Target size={16} color="var(--color-accent)" style={{ marginTop: 2, flexShrink: 0 }} />
+            <p className="text-xs" style={{ lineHeight: 1.45, color: 'var(--color-text-secondary)' }}>{plusCoachMessage}</p>
+          </div>
+        </div>
+      )}
 
       {/* ── Exercises ── */}
       <AnimatePresence>

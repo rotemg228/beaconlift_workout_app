@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { useUserStore } from '../store';
 import { buildGumroadCheckoutUrl } from '../utils/gumroadCheckout';
+import { isNativeRuntime, presentPlusPaywall } from '../revenuecat';
 
 const PRO_FEATURES = [
   {
@@ -57,6 +58,8 @@ const PRO_FEATURES = [
 function ProModalContent() {
   const { setProModalOpen, user, profile } = useUserStore();
   const [error, setError] = useState('');
+  const [isPhoneViewport, setIsPhoneViewport] = useState(false);
+  const [isOpeningPaywall, setIsOpeningPaywall] = useState(false);
 
   const gumroadBase = import.meta.env.VITE_GUMROAD_CHECKOUT_URL?.trim();
   const checkoutHref = buildGumroadCheckoutUrl(gumroadBase, {
@@ -64,6 +67,16 @@ function ProModalContent() {
     email: user?.email,
   });
   const canCheckout = !!(user?.id && user?.email && checkoutHref);
+  const isNative = isNativeRuntime();
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window.matchMedia) return undefined;
+    const mql = window.matchMedia('(max-width: 768px), (pointer: coarse)');
+    const apply = () => setIsPhoneViewport(mql.matches);
+    apply();
+    mql.addEventListener('change', apply);
+    return () => mql.removeEventListener('change', apply);
+  }, []);
 
   useEffect(() => {
     if (profile.isPro) {
@@ -89,6 +102,32 @@ function ProModalContent() {
     }
     setError('');
     setProModalOpen(false);
+  };
+
+  const onCopyCheckoutLink = async () => {
+    try {
+      if (!checkoutHref) {
+        setError('Checkout link is unavailable right now.');
+        return;
+      }
+      await navigator.clipboard.writeText(checkoutHref);
+      setError('Checkout link copied. Paste it in any browser if popup blocking happens.');
+    } catch {
+      setError('Could not copy checkout link. You can still use the button above.');
+    }
+  };
+
+  const onOpenNativePaywall = async () => {
+    try {
+      setError('');
+      setIsOpeningPaywall(true);
+      await presentPlusPaywall();
+      setProModalOpen(false);
+    } catch (err) {
+      setError(err?.message || 'Could not open native paywall. Please try again.');
+    } finally {
+      setIsOpeningPaywall(false);
+    }
   };
 
   return (
@@ -154,22 +193,41 @@ function ProModalContent() {
               </div>
             </div>
 
-            {canCheckout ? (
+            {isNative ? (
+              <button
+                type="button"
+                className="btn btn-primary btn-full pro-checkout-btn"
+                onClick={onOpenNativePaywall}
+                disabled={isOpeningPaywall}
+              >
+                <ExternalLink size={18} />
+                {isOpeningPaywall ? 'Opening paywall...' : 'Open native paywall'}
+              </button>
+            ) : canCheckout ? (
               <a
                 href={checkoutHref}
                 className="btn btn-primary btn-full pro-checkout-btn"
                 style={{ textDecoration: 'none' }}
-                target="_blank"
+                target={isPhoneViewport ? '_self' : '_blank'}
                 rel="noopener noreferrer"
                 onClick={onCheckoutClick}
               >
                 <ExternalLink size={18} />
-                Open checkout in new tab
+                {isPhoneViewport ? 'Continue to checkout' : 'Open checkout in new tab'}
               </a>
             ) : (
               <button type="button" className="btn btn-primary btn-full pro-checkout-btn" disabled>
                 <ExternalLink size={18} />
-                Open checkout in new tab
+                Continue to checkout
+              </button>
+            )}
+            {!isNative && canCheckout && (
+              <button
+                type="button"
+                className="btn btn-secondary btn-full pro-checkout-copy-btn mt-10"
+                onClick={onCopyCheckoutLink}
+              >
+                Copy checkout link
               </button>
             )}
 
@@ -183,9 +241,15 @@ function ProModalContent() {
                 Missing <code style={{ fontSize: '0.7rem' }}>VITE_GUMROAD_CHECKOUT_URL</code> on this deploy. Add it in Vercel → Environment Variables → Redeploy.
               </p>
             )}
-            <p className="text-xs text-muted mt-16">
-              After you pay, come back here—Plus turns on automatically (same email as your account helps). This tab stays on BeaconLift.
-            </p>
+            {isNative ? (
+              <p className="text-xs text-muted mt-16">
+                On native app builds, purchases run through Apple/Google billing and unlock Plus automatically.
+              </p>
+            ) : (
+              <p className="text-xs text-muted mt-16">
+                Mobile tip: if the payment page fails to open, use "Copy checkout link" and paste into your browser. After payment, Plus turns on automatically for the same email.
+              </p>
+            )}
           </div>
         </motion.div>
       </div>

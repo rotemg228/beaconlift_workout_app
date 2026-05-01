@@ -1,13 +1,14 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { TrendingUp, Trophy, Dumbbell, ChevronDown } from 'lucide-react';
+import { TrendingUp, Trophy, Crown, Lock, Sparkles } from 'lucide-react';
 import {
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
+  XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, Area, AreaChart
 } from 'recharts';
-import { useWorkoutStore, useExerciseStore, useSettingsStore } from '../store';
+import { useWorkoutStore, useExerciseStore, useSettingsStore, useUserStore } from '../store';
 import { format, parseISO } from 'date-fns';
 import CustomSelect from '../components/CustomSelect';
+import { computeWeeklyTrainingScore } from '../utils/trainingInsights';
 
 const CustomTooltip = ({ active, payload, label, unit }) => {
   if (!active || !payload?.length) return null;
@@ -77,6 +78,7 @@ export default function Progress() {
   const { sessions, getBestSets, getAllPRs } = useWorkoutStore();
   const { exercises, getExercise } = useExerciseStore();
   const { unit } = useSettingsStore();
+  const { profile, setProModalOpen } = useUserStore();
 
   const [tab, setTab] = useState('strength'); // 'strength' | 'prs'
   const [selectedEx, setSelectedEx] = useState(exercises[0]?.id ?? null);
@@ -99,11 +101,55 @@ export default function Progress() {
   };
   const cfg = chartConfig[chartType];
 
+  const trainingScore = computeWeeklyTrainingScore(sessions, getAllPRs);
+
   return (
     <div className="page-content">
       <div className="topbar">
         <span className="topbar-title">Progress</span>
       </div>
+
+      <div className="section-header" style={{ marginTop: 4 }}>
+        <span className="section-title">Training score</span>
+        {profile.isPro ? <span className="badge badge-accent">Plus</span> : <span className="badge badge-muted">Preview</span>}
+      </div>
+
+      {profile.isPro ? (
+        <motion.div className="card mb-16 plus-insights-card" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
+          <div className="flex items-center justify-between mb-10">
+            <div className="flex items-center gap-8">
+              <Sparkles size={16} color="var(--color-accent)" />
+              <span className="font-semibold text-sm">{trainingScore.label}</span>
+            </div>
+            <span className="text-2xl font-bold display-font text-accent">{trainingScore.score}</span>
+          </div>
+          <div className="progress-bar-track mb-8">
+            <div className="progress-bar-fill" style={{ width: `${trainingScore.score}%` }} />
+          </div>
+          <div className="flex justify-between text-xs text-muted">
+            <span>{trainingScore.daysTrainedThisWeek} days this week</span>
+            <span>
+              {Math.round(trainingScore.volumeThisWeek).toLocaleString()} {unit} · 7d
+            </span>
+          </div>
+        </motion.div>
+      ) : (
+        <motion.div className="card mb-16 plus-preview-card" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
+          <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center gap-8">
+              <Crown size={16} color="var(--color-accent)" />
+              <span className="font-semibold text-sm">Weekly training score</span>
+            </div>
+            <Lock size={14} color="var(--color-text-muted)" />
+          </div>
+          <p className="text-xs text-muted mb-12">
+            One number that blends consistency, volume trend, and PR momentum—Plus only.
+          </p>
+          <button type="button" className="btn btn-primary btn-full btn-sm" onClick={() => setProModalOpen(true)}>
+            Unlock with Plus
+          </button>
+        </motion.div>
+      )}
 
       {/* Tabs */}
       <div className="tabs mb-16" style={{ marginTop: 4 }}>

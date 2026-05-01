@@ -1,10 +1,19 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import legacy from '@vitejs/plugin-legacy'
 import { VitePWA } from 'vite-plugin-pwa'
 
 export default defineConfig({
+  // Legacy plugin handles JS targets; keep CSS readable for older WebViews.
+  build: {
+    cssTarget: 'chrome61',
+  },
   plugins: [
     react(),
+    legacy({
+      targets: ['Chrome >= 61', 'Android >= 7', 'iOS >= 12', 'defaults'],
+      renderModernChunks: false,
+    }),
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'pwa-512.png'],
