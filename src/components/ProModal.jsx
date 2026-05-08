@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   X,
@@ -8,12 +8,12 @@ import {
   BarChart3,
   Trophy,
   Sparkles,
-  ExternalLink,
   Smartphone,
+  CreditCard,
 } from 'lucide-react';
 import { useUserStore } from '../store';
-import { buildGumroadCheckoutUrl } from '../utils/gumroadCheckout';
 import { isNativeRuntime, presentPlusPaywall } from '../revenuecat';
+import { isWebBillingConfigured, presentWebPlusPaywall, ErrorCode } from '../revenuecatWeb';
 
 const PRO_FEATURES = [
   {
@@ -58,64 +58,18 @@ const PRO_FEATURES = [
 function ProModalContent() {
   const { setProModalOpen, user, profile } = useUserStore();
   const [error, setError] = useState('');
-  const [isPhoneViewport, setIsPhoneViewport] = useState(false);
   const [isOpeningPaywall, setIsOpeningPaywall] = useState(false);
+  const paywallHostRef = useRef(null);
 
-  const gumroadBase = import.meta.env.VITE_GUMROAD_CHECKOUT_URL?.trim();
-  const checkoutHref = buildGumroadCheckoutUrl(gumroadBase, {
-    userId: user?.id,
-    email: user?.email,
-  });
-  const canCheckout = !!(user?.id && user?.email && checkoutHref);
   const isNative = isNativeRuntime();
-
-  useEffect(() => {
-    if (typeof window === 'undefined' || !window.matchMedia) return undefined;
-    const mql = window.matchMedia('(max-width: 768px), (pointer: coarse)');
-    const apply = () => setIsPhoneViewport(mql.matches);
-    apply();
-    mql.addEventListener('change', apply);
-    return () => mql.removeEventListener('change', apply);
-  }, []);
+  const webBillingReady = isWebBillingConfigured();
+  const canSubscribe = !!(user?.id && user?.email) && (isNative || webBillingReady);
 
   useEffect(() => {
     if (profile.isPro) {
       setProModalOpen(false);
     }
   }, [profile.isPro, setProModalOpen]);
-
-  const onCheckoutClick = (e) => {
-    if (!user?.id || !user?.email) {
-      e.preventDefault();
-      setError('Please sign in with a real account before subscribing.');
-      return;
-    }
-    if (!gumroadBase) {
-      e.preventDefault();
-      setError('Checkout is not configured. Add VITE_GUMROAD_CHECKOUT_URL in Vercel and redeploy.');
-      return;
-    }
-    if (!checkoutHref) {
-      e.preventDefault();
-      setError('Invalid checkout URL. Use a full https://…gumroad.com/l/… link in VITE_GUMROAD_CHECKOUT_URL.');
-      return;
-    }
-    setError('');
-    setProModalOpen(false);
-  };
-
-  const onCopyCheckoutLink = async () => {
-    try {
-      if (!checkoutHref) {
-        setError('Checkout link is unavailable right now.');
-        return;
-      }
-      await navigator.clipboard.writeText(checkoutHref);
-      setError('Checkout link copied. Paste it in any browser if popup blocking happens.');
-    } catch {
-      setError('Could not copy checkout link. You can still use the button above.');
-    }
-  };
 
   const onOpenNativePaywall = async () => {
     try {
@@ -125,6 +79,31 @@ function ProModalContent() {
       setProModalOpen(false);
     } catch (err) {
       setError(err?.message || 'Could not open native paywall. Please try again.');
+    } finally {
+      setIsOpeningPaywall(false);
+    }
+  };
+
+  const onOpenWebPaywall = async () => {
+    if (!user?.id || !user?.email) {
+      setError('Please sign in before subscribing.');
+      return;
+    }
+    try {
+      setError('');
+      setIsOpeningPaywall(true);
+      await presentWebPlusPaywall({
+        userId: user.id,
+        customerEmail: user.email,
+        htmlTarget: paywallHostRef.current,
+      });
+      setProModalOpen(false);
+    } catch (err) {
+      if (err?.errorCode === ErrorCode.UserCancelledError) {
+        setError('');
+        return;
+      }
+      setError(err?.message || 'Checkout could not be opened. Please try again.');
     } finally {
       setIsOpeningPaywall(false);
     }
@@ -184,14 +163,17 @@ function ProModalContent() {
             <div className="card w-full mb-16 pro-card-pricing">
               <div className="flex items-center justify-between gap-12">
                 <div className="text-left">
-                  <div className="text-sm font-bold">Monthly · Gumroad</div>
+                  <div className="text-sm font-bold">BeaconLift Plus</div>
                   <div className="text-xs text-muted mt-8">
-                    7-day trial · then $1.99/mo (set in Gumroad)
+                    Pricing, trial, and renewal are set in RevenueCat (same entitlement on web and in the app).
                   </div>
                 </div>
-                <div className="text-lg font-bold text-accent shrink-0">$1.99</div>
+                <CreditCard size={22} className="text-accent shrink-0" aria-hidden />
               </div>
             </div>
+
+            {/* Mount point for embedded paywall UI (optional); RC may still use a full-screen layer */}
+            <div ref={paywallHostRef} className="w-full" style={{ minHeight: 0 }} />
 
             {isNative ? (
               <button
@@ -200,34 +182,18 @@ function ProModalContent() {
                 onClick={onOpenNativePaywall}
                 disabled={isOpeningPaywall}
               >
-                <ExternalLink size={18} />
-                {isOpeningPaywall ? 'Opening paywall...' : 'Open native paywall'}
+                <CreditCard size={18} />
+                {isOpeningPaywall ? 'Opening paywall...' : 'Subscribe'}
               </button>
-            ) : canCheckout ? (
-              <a
-                href={checkoutHref}
-                className="btn btn-primary btn-full pro-checkout-btn"
-                style={{ textDecoration: 'none' }}
-                target={isPhoneViewport ? '_self' : '_blank'}
-                rel="noopener noreferrer"
-                onClick={onCheckoutClick}
-              >
-                <ExternalLink size={18} />
-                {isPhoneViewport ? 'Continue to checkout' : 'Open checkout in new tab'}
-              </a>
             ) : (
-              <button type="button" className="btn btn-primary btn-full pro-checkout-btn" disabled>
-                <ExternalLink size={18} />
-                Continue to checkout
-              </button>
-            )}
-            {!isNative && canCheckout && (
               <button
                 type="button"
-                className="btn btn-secondary btn-full pro-checkout-copy-btn mt-10"
-                onClick={onCopyCheckoutLink}
+                className="btn btn-primary btn-full pro-checkout-btn"
+                onClick={onOpenWebPaywall}
+                disabled={!canSubscribe || isOpeningPaywall}
               >
-                Copy checkout link
+                <CreditCard size={18} />
+                {isOpeningPaywall ? 'Opening checkout...' : 'Subscribe'}
               </button>
             )}
 
@@ -236,20 +202,17 @@ function ProModalContent() {
                 {error}
               </p>
             )}
-            {!gumroadBase && (
-              <p className="text-xs text-danger mt-12" style={{ maxWidth: 280 }}>
-                Missing <code style={{ fontSize: '0.7rem' }}>VITE_GUMROAD_CHECKOUT_URL</code> on this deploy. Add it in Vercel → Environment Variables → Redeploy.
+            {!isNative && !webBillingReady && (
+              <p className="text-xs text-danger mt-12" style={{ maxWidth: 320 }}>
+                Web checkout is not configured. Add{' '}
+                <code style={{ fontSize: '0.7rem' }}>VITE_REVENUECAT_WEB_BILLING_API_KEY</code> (RevenueCat Web Billing public key) and redeploy.
               </p>
             )}
-            {isNative ? (
-              <p className="text-xs text-muted mt-16">
-                On native app builds, purchases run through Apple/Google billing and unlock Plus automatically.
-              </p>
-            ) : (
-              <p className="text-xs text-muted mt-16">
-                Mobile tip: if the payment page fails to open, use "Copy checkout link" and paste into your browser. After payment, Plus turns on automatically for the same email.
-              </p>
-            )}
+            <p className="text-xs text-muted mt-16">
+              {isNative
+                ? 'Billed through Apple or Google. Plus unlocks when the purchase completes.'
+                : 'Secure checkout powered by RevenueCat (payments processed via Stripe). Use the same account as in the app so your subscription carries across devices.'}
+            </p>
           </div>
         </motion.div>
       </div>

@@ -45,8 +45,8 @@ export default function TermsOfService() {
       <section>
         <h2 className="text-base font-bold mb-8" style={{ color: 'var(--color-text-primary)' }}>Subscriptions &amp; payments</h2>
         <p>
-          Paid plans (such as BeaconLift Plus) may be offered through a third-party checkout provider that acts as merchant of
-          record (for example Gumroad). Fees, taxes, renewal terms, and cancellation are presented at purchase and in your receipt.
+          Paid plans (such as BeaconLift Plus) are offered through RevenueCat’s checkout (payments processed with Stripe). Fees,
+          taxes, renewal terms, and cancellation are presented at purchase and in your receipt.
           See our{' '}
           <Link to="/refunds" className="text-accent font-semibold" style={{ textDecoration: 'none' }}>
             Refund policy

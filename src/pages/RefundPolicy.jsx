@@ -7,9 +7,9 @@ export default function RefundPolicy() {
         <h2 className="text-base font-bold mb-8" style={{ color: 'var(--color-text-primary)' }}>Overview</h2>
         <p>
           BeaconLift offers optional paid plans (for example <strong className="text-secondary">BeaconLift Plus</strong>). Paid
-          subscriptions are processed by our payment partner, which may act as the <strong className="text-secondary">merchant of
-          record</strong> (for example <strong className="text-secondary">Gumroad</strong>). That means Gumroad (or the checkout
-          provider shown on your receipt) is typically the seller of record for tax and consumer-rights purposes.
+          subscriptions are processed through <strong className="text-secondary">RevenueCat</strong> using{' '}
+          <strong className="text-secondary">Stripe</strong> for payment collection. The merchant of record and tax treatment are
+          shown at checkout and on your receipt or card statement.
         </p>
       </section>
 
@@ -34,10 +34,10 @@ export default function RefundPolicy() {
       <section>
         <h2 className="text-base font-bold mb-8" style={{ color: 'var(--color-text-primary)' }}>Refunds</h2>
         <p>
-          <strong className="text-secondary">Refund requests for paid subscriptions are handled by our payment provider (e.g.
-          Gumroad)</strong> according to their buyer terms and applicable law. If you believe you were charged in error, contact
-          support using the link on your receipt or Gumroad’s help channels. We will also try to help if you email us, but the
-          payment provider may need to process any money movement.
+          <strong className="text-secondary">Refund requests for paid subscriptions are handled according to the payment provider’s
+          terms</strong> (Stripe / RevenueCat checkout flow) and applicable law. If you believe you were charged in error, use the
+          management link from your receipt or contact us—we will try to help, but the payment processor may need to process any
+          money movement.
         </p>
         <p className="mt-12">
           We do not guarantee refunds for partial subscription periods except where required by law or where the payment provider
@@ -68,8 +68,8 @@ export default function RefundPolicy() {
           </a>
         </p>
         <p className="mt-12 text-xs text-muted">
-          This page is provided for clarity and is not legal advice. For Gumroad-specific terms, refer to Gumroad’s documentation and
-          the terms presented at checkout.
+          This page is provided for clarity and is not legal advice. Refer to the terms presented at checkout and your payment
+          confirmation email for provider-specific rules.
         </p>
       </section>
     </LegalDocPage>

@@ -44,8 +44,8 @@ export default function PrivacyPolicy() {
         <h2 className="text-base font-bold mb-8" style={{ color: 'var(--color-text-primary)' }}>Storage &amp; processors</h2>
         <p>
           We use trusted third-party infrastructure to run the Service, including database and authentication providers (such as
-          Supabase) and hosting (such as Vercel). Payment processing for paid plans may be handled by a reseller / merchant of record
-          (such as Gumroad) under their terms and privacy notice.
+          Supabase) and hosting (such as Vercel). Subscription billing may be handled by RevenueCat and Stripe under their terms and
+          privacy notices.
         </p>
         <p className="mt-12">
           Data may be processed in countries where those providers operate. We rely on contractual and technical safeguards

@@ -1,0 +1,5 @@
+Tomorrow — reminders (BeaconLift / Gumroad)
+
+1) Custom field (e.g. beaconlift_user_id on checkout URL) is weak: users can edit/tamper with it and break or spoof linking. Plan to replace with something server-trusted (signed payload, Gumroad license + email match only, etc.).
+
+2) Gumroad product/checkout page design: OK to ship with for launch, but plan a full pass later — replace or heavily restyle when you can.

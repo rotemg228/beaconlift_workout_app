@@ -18,6 +18,7 @@ import RefundPolicy from './pages/RefundPolicy';
 import TermsOfService from './pages/TermsOfService';
 import ProModal from './components/ProModal';
 import { isNativeRuntime, syncRevenueCatPlus } from './revenuecat';
+import { isWebBillingConfigured, syncRevenueCatWebPlus } from './revenuecatWeb';
 import './styles/index.css';
 
 const PUBLIC_PATHS = ['/login', '/pricing', '/privacy', '/refunds', '/terms'];
@@ -91,6 +92,11 @@ function AppRoutes() {
             if (!isPlus) return;
             useUserStore.getState().updateProfile({ isPro: true, plan: 'plus' });
           }).catch((err) => console.warn('RevenueCat sync failed', err));
+        } else if (isWebBillingConfigured()) {
+          syncRevenueCatWebPlus(u.id, (_customerInfo, isPlus) => {
+            if (!isPlus) return;
+            useUserStore.getState().updateProfile({ isPro: true, plan: 'plus' });
+          }).catch((err) => console.warn('RevenueCat web sync failed', err));
         }
       } else {
         syncProfile(null);
@@ -111,6 +117,11 @@ function AppRoutes() {
             if (!isPlus) return;
             useUserStore.getState().updateProfile({ isPro: true, plan: 'plus' });
           }).catch((err) => console.warn('RevenueCat sync failed', err));
+        } else if (isWebBillingConfigured()) {
+          syncRevenueCatWebPlus(u.id, (_customerInfo, isPlus) => {
+            if (!isPlus) return;
+            useUserStore.getState().updateProfile({ isPro: true, plan: 'plus' });
+          }).catch((err) => console.warn('RevenueCat web sync failed', err));
         }
       } else {
         syncProfile(null);
@@ -121,12 +132,18 @@ function AppRoutes() {
     return () => subscription.unsubscribe();
   }, [setUser, syncProfile, syncSessions, syncTemplates, syncMeasurements]);
 
-  // When returning from Gumroad (or another tab), refresh Plus status from Supabase
+  // When returning from checkout or another tab, refresh Plus from Supabase + RevenueCat web
   useEffect(() => {
     const refresh = () => {
       if (document.visibilityState !== 'visible') return;
       const u = useUserStore.getState().user;
-      if (u) useUserStore.getState().syncProfile(u);
+      if (!u) return;
+      useUserStore.getState().syncProfile(u);
+      if (!isNativeRuntime() && isWebBillingConfigured()) {
+        syncRevenueCatWebPlus(u.id, (_info, isPlus) => {
+          if (isPlus) useUserStore.getState().updateProfile({ isPro: true, plan: 'plus' });
+        }).catch(() => {});
+      }
     };
     document.addEventListener('visibilitychange', refresh);
     window.addEventListener('focus', refresh);

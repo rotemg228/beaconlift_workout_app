@@ -157,7 +157,7 @@ export default function Pricing() {
 
               <p className="text-xs text-muted mb-16" style={{ lineHeight: 1.5 }}>
                 <strong className="text-secondary">7-day free trial</strong>, then $1.99 USD per month. Cancel anytime subject to
-                checkout terms. Payment is processed by our reseller (e.g. Gumroad); your statement may show their name.
+                checkout terms. Payment is processed through RevenueCat (with Stripe as the payment processor); your statement may show Stripe or a related descriptor.
               </p>
 
               <ul className="flex-col gap-12 mb-20">
